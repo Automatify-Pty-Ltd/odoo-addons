@@ -5,23 +5,49 @@
         <field name="model">document.page</field>
         <field name="inherit_id" ref="document_page.view_wiki_form" />
         <field name="arch" type="xml">
-            <xpath expr="//form/sheet" position="before">
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button
+                    name="action_open_markdown_import"
+                    type="object"
+                    class="oe_stat_button"
+                    icon="fa-upload"
+                    help="Replace this saved page from a Markdown file"
+                    invisible="not id or type != 'content'"
+                >
+                    <div class="o_field_widget o_stat_info">
+                        <span class="o_stat_text">Import Markdown</span>
+                    </div>
+                </button>
+                <button
+                    name="action_export_markdown"
+                    type="object"
+                    class="oe_stat_button"
+                    icon="fa-download"
+                    help="Download this saved page as Markdown"
+                    invisible="not id or type != 'content'"
+                >
+                    <div class="o_field_widget o_stat_info">
+                        <span class="o_stat_text">Export Markdown</span>
+                    </div>
+                </button>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_document_page_list_markdown" model="ir.ui.view">
+        <field name="name">document.page.list.markdown</field>
+        <field name="model">document.page</field>
+        <field name="inherit_id" ref="document_page.view_wiki_tree" />
+        <field name="arch" type="xml">
+            <xpath expr="//list/field[1]" position="before">
                 <header>
                     <button
-                        name="action_open_markdown_import"
+                        name="%(action_knowledge_markdown_import_new)d"
                         string="Import Markdown"
-                        type="object"
+                        type="action"
                         class="btn-secondary"
                         icon="fa-upload"
-                        invisible="type != 'content'"
-                    />
-                    <button
-                        name="action_export_markdown"
-                        string="Export Markdown"
-                        type="object"
-                        class="btn-secondary"
-                        icon="fa-download"
-                        invisible="type != 'content'"
+                        display="always"
                     />
                 </header>
             </xpath>
