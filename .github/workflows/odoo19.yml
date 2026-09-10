@@ -42,7 +42,7 @@ jobs:
         run: |
           docker network create odoo19-ci
           docker run --detach --rm \
-            --name odoo19-ci-db \
+            --name db \
             --network odoo19-ci \
             --env POSTGRES_DB=postgres \
             --env POSTGRES_USER=odoo \
@@ -50,12 +50,12 @@ jobs:
             postgres:16
 
           for attempt in $(seq 1 60); do
-            if docker exec odoo19-ci-db pg_isready -U odoo -d postgres >/dev/null 2>&1; then
+            if docker exec db pg_isready -U odoo -d postgres >/dev/null 2>&1; then
               exit 0
             fi
             sleep 1
           done
-          docker logs odoo19-ci-db
+          docker logs db
           exit 1
 
       - name: Install addon and run Odoo tests
@@ -67,10 +67,6 @@ jobs:
             --volume "$RUNNER_TEMP/oca-knowledge:/mnt/oca-knowledge:ro" \
             automatify-odoo19-ci \
             odoo \
-            --db_host=odoo19-ci-db \
-            --db_port=5432 \
-            --db_user=odoo \
-            --db_password=odoo \
             --database=odoo19_ci \
             --without-demo=all \
             --addons-path=/usr/lib/python3/dist-packages/odoo/addons,/mnt/oca-knowledge,/mnt/extra-addons \
@@ -81,10 +77,10 @@ jobs:
 
       - name: Show database logs on failure
         if: failure()
-        run: docker logs odoo19-ci-db || true
+        run: docker logs db || true
 
       - name: Clean up
         if: always()
         run: |
-          docker rm --force odoo19-ci-db 2>/dev/null || true
+          docker rm --force db 2>/dev/null || true
           docker network rm odoo19-ci 2>/dev/null || true
