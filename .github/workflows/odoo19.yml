@@ -9,6 +9,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: odoo19-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   test:
     name: Install and test on Odoo 19
@@ -71,7 +75,7 @@ jobs:
             --without-demo=all \
             --addons-path=/usr/lib/python3/dist-packages/odoo/addons,/mnt/oca-knowledge,/mnt/extra-addons \
             --init=knowledge_markdown \
-            --test-enable \
+            --test-tags=/knowledge_markdown \
             --stop-after-init \
             --log-level=test
 
