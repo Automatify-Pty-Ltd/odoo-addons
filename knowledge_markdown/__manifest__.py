@@ -13,6 +13,12 @@
         "views/markdown_import_wizard_views.xml",
         "views/document_page_views.xml",
     ],
+    "assets": {
+        "web.assets_backend": [
+            "knowledge_markdown/static/src/cog_menu/markdown_import_menu.js",
+            "knowledge_markdown/static/src/cog_menu/markdown_import_menu.xml",
+        ],
+    },
     "installable": True,
     "application": False,
 }
