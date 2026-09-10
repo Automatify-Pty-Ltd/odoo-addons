@@ -72,7 +72,8 @@ jobs:
             automatify-odoo19-ci \
             odoo \
             --database=odoo19_ci \
-            --without-demo=all \
+            --without-demo=true \
+            --http-interface=127.0.0.1 \
             --addons-path=/usr/lib/python3/dist-packages/odoo/addons,/mnt/oca-knowledge,/mnt/extra-addons \
             --init=knowledge_markdown \
             --test-tags=/knowledge_markdown \
