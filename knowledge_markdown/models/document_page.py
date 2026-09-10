@@ -16,7 +16,10 @@ class DocumentPage(models.Model):
             "res_model": "knowledge.markdown.import.wizard",
             "view_mode": "form",
             "target": "new",
-            "context": {"default_page_id": self.id},
+            "context": {
+                "default_target_mode": "existing",
+                "default_page_id": self.id,
+            },
         }
 
     def action_export_markdown(self):
