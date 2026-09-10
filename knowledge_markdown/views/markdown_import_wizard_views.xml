@@ -6,7 +6,23 @@
         <field name="arch" type="xml">
             <form string="Import Markdown">
                 <group>
-                    <field name="page_id" />
+                    <field name="target_mode" invisible="1" />
+                    <field
+                        name="page_id"
+                        invisible="target_mode != 'existing'"
+                        required="target_mode == 'existing'"
+                    />
+                    <field
+                        name="parent_id"
+                        invisible="target_mode != 'new'"
+                        required="target_mode == 'new'"
+                        options="{'no_create': True}"
+                    />
+                    <field
+                        name="page_name"
+                        invisible="target_mode != 'new'"
+                        placeholder="Optional — uses first # heading or file name"
+                    />
                     <field
                         name="markdown_file"
                         filename="filename"
@@ -30,5 +46,14 @@
                 </footer>
             </form>
         </field>
+    </record>
+
+    <record id="action_knowledge_markdown_import_new" model="ir.actions.act_window">
+        <field name="name">Import Markdown</field>
+        <field name="res_model">knowledge.markdown.import.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="view_id" ref="view_knowledge_markdown_import_wizard_form" />
+        <field name="target">new</field>
+        <field name="context">{'default_target_mode': 'new'}</field>
     </record>
 </odoo>
