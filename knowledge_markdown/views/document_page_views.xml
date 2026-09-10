@@ -33,24 +33,4 @@
             </xpath>
         </field>
     </record>
-
-    <record id="view_document_page_list_markdown" model="ir.ui.view">
-        <field name="name">document.page.list.markdown</field>
-        <field name="model">document.page</field>
-        <field name="inherit_id" ref="document_page.view_wiki_tree" />
-        <field name="arch" type="xml">
-            <xpath expr="//list/field[1]" position="before">
-                <header>
-                    <button
-                        name="%(action_knowledge_markdown_import_new)d"
-                        string="Import Markdown"
-                        type="action"
-                        class="btn-secondary"
-                        icon="fa-upload"
-                        display="always"
-                    />
-                </header>
-            </xpath>
-        </field>
-    </record>
 </odoo>
