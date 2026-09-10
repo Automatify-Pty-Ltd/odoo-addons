@@ -44,13 +44,16 @@ require any Automatify service, account, API key, or deployment setup.
 
 ### Create a page from Markdown
 
-Open the Knowledge **Pages** list and click **Import Markdown**. Choose a category
-and a `.md` or `.markdown` file. The title field is optional: when it is empty,
-the importer uses the first level-one Markdown heading (`# Heading`) and falls
-back to the file name. The newly created page opens after import.
+Open the Knowledge **Pages** list, open the cog menu, and choose **Import Markdown**.
+It is placed next to Odoo's standard **Import records** entry so Markdown import is
+available from the same area without changing Odoo's generic CSV/XLSX importer.
+Choose a category and a `.md` or `.markdown` file. The title field is optional:
+when it is empty, the importer uses the first level-one Markdown heading
+(`# Heading`) and falls back to the file name. The newly created page opens after
+import.
 
 Odoo's standard **Import records** action remains unchanged for tabular CSV/XLSX
-record imports. Markdown is exposed as a Knowledge-specific import because a
+record imports. Markdown is handled by a Knowledge-specific importer because a
 Markdown document maps to page content rather than to the generic column/field
 mapping used by Odoo's record importer.
 
