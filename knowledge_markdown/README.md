@@ -4,8 +4,9 @@ Import and export OCA Knowledge pages (`document.page`) as Markdown in Odoo 19.
 
 ## What it does
 
-- Import a UTF-8 `.md` or `.markdown` file into an existing Knowledge content page.
-- Export the current Knowledge content page as a `.md` file.
+- Create a new Knowledge page directly from a UTF-8 `.md` or `.markdown` file.
+- Import a Markdown file into an existing saved Knowledge content page as a new revision.
+- Export the current saved Knowledge content page as a `.md` file.
 - Preserve common Markdown structures: headings, emphasis, links, images, lists,
   blockquotes, tables, inline code, horizontal rules, and fenced code blocks.
 - Preserve fenced code-block language identifiers.
@@ -41,13 +42,30 @@ require any Automatify service, account, API key, or deployment setup.
 
 ## Usage
 
-Open a content page in Knowledge.
+### Create a page from Markdown
 
-- **Import Markdown** opens a dialog where you select a Markdown file and provide
-  revision metadata. Import creates a new `document.page.history` revision.
-- **Export Markdown** downloads the current page as UTF-8 Markdown.
+Open the Knowledge **Pages** list and click **Import Markdown**. Choose a category
+and a `.md` or `.markdown` file. The title field is optional: when it is empty,
+the importer uses the first level-one Markdown heading (`# Heading`) and falls
+back to the file name. The newly created page opens after import.
+
+Odoo's standard **Import records** action remains unchanged for tabular CSV/XLSX
+record imports. Markdown is exposed as a Knowledge-specific import because a
+Markdown document maps to page content rather than to the generic column/field
+mapping used by Odoo's record importer.
+
+### Update an existing page
+
+On a saved content page, the compact **Import Markdown** action imports a file as a
+new `document.page.history` revision. **Export Markdown** downloads the current
+page as UTF-8 Markdown. These page-level actions are hidden until the record has
+been saved, avoiding invalid actions on an unsaved page.
 
 Imports are limited to 2 MiB and are sanitized before being stored.
+
+There is deliberately no global enable/disable setting in the first release. The
+feature is available when the addon is installed, and its actions appear only in
+contexts where they are valid.
 
 ## Mermaid round-trip
 
@@ -76,7 +94,8 @@ between multiple pages.
 
 Markdown is converted to HTML and passed through Odoo's HTML sanitizer before it
 is written to page history. Export routes require an authenticated user and check
-read access to the requested page.
+read access to the requested page. Creating a page from Markdown uses the current
+user's normal Odoo create and category access rights.
 
 ## License
 
