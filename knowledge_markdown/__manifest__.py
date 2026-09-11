@@ -19,6 +19,7 @@
             "knowledge_markdown/static/src/cog_menu/markdown_import_menu.xml",
         ],
     },
+    "images": ["static/description/banner.png"],
     "installable": True,
     "application": False,
 }
