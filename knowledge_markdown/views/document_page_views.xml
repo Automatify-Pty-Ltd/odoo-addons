@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="view_document_page_form_markdown" model="ir.ui.view">
+        <field name="name">document.page.form.markdown</field>
+        <field name="model">document.page</field>
+        <field name="inherit_id" ref="document_page.view_wiki_form" />
+        <field name="arch" type="xml">
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button
+                    name="action_open_markdown_import"
+                    type="object"
+                    class="oe_stat_button"
+                    icon="fa-upload"
+                    help="Replace this saved page from a Markdown file"
+                    invisible="not id or type != 'content'"
+                >
+                    <div class="o_field_widget o_stat_info">
+                        <span class="o_stat_text">Import Markdown</span>
+                    </div>
+                </button>
+                <button
+                    name="action_export_markdown"
+                    type="object"
+                    class="oe_stat_button"
+                    icon="fa-download"
+                    help="Download this saved page as Markdown"
+                    invisible="not id or type != 'content'"
+                >
+                    <div class="o_field_widget o_stat_info">
+                        <span class="o_stat_text">Export Markdown</span>
+                    </div>
+                </button>
+            </xpath>
+        </field>
+    </record>
+</odoo>

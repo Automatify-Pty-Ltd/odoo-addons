@@ -1,0 +1,91 @@
+name: Odoo 19
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: odoo19-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Install and test on Odoo 19
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out addon repository
+        uses: actions/checkout@v4
+
+      - name: Fetch OCA Knowledge 19.0
+        run: |
+          git clone --depth 1 --branch 19.0 \
+            https://github.com/OCA/knowledge.git \
+            "$RUNNER_TEMP/oca-knowledge"
+
+      - name: Build Odoo 19 test image
+        run: |
+          cat > "$RUNNER_TEMP/Dockerfile.odoo-ci" <<'EOF'
+          FROM odoo:19.0
+          USER root
+          RUN pip3 install --no-cache-dir --break-system-packages "Markdown>=3.5,<4"
+          USER odoo
+          EOF
+          docker build \
+            --file "$RUNNER_TEMP/Dockerfile.odoo-ci" \
+            --tag automatify-odoo19-ci \
+            "$RUNNER_TEMP"
+
+      - name: Start PostgreSQL
+        run: |
+          docker network create odoo19-ci
+          docker run --detach --rm \
+            --name db \
+            --network odoo19-ci \
+            --env POSTGRES_DB=postgres \
+            --env POSTGRES_USER=odoo \
+            --env POSTGRES_PASSWORD=odoo \
+            postgres:16
+
+          for attempt in $(seq 1 60); do
+            if docker exec db pg_isready -U odoo -d postgres >/dev/null 2>&1; then
+              exit 0
+            fi
+            sleep 1
+          done
+          docker logs db
+          exit 1
+
+      - name: Install addon and run Odoo tests
+        run: |
+          docker run --rm \
+            --name odoo19-ci-app \
+            --network odoo19-ci \
+            --volume "$GITHUB_WORKSPACE:/mnt/extra-addons:ro" \
+            --volume "$RUNNER_TEMP/oca-knowledge:/mnt/oca-knowledge:ro" \
+            automatify-odoo19-ci \
+            odoo \
+            --database=odoo19_ci \
+            --without-demo=true \
+            --http-interface=127.0.0.1 \
+            --addons-path=/usr/lib/python3/dist-packages/odoo/addons,/mnt/oca-knowledge,/mnt/extra-addons \
+            --init=knowledge_markdown \
+            --test-tags=/knowledge_markdown \
+            --stop-after-init \
+            --log-level=test
+
+      - name: Show database logs on failure
+        if: failure()
+        run: docker logs db || true
+
+      - name: Clean up
+        if: always()
+        run: |
+          docker rm --force db 2>/dev/null || true
+          docker network rm odoo19-ci 2>/dev/null || true

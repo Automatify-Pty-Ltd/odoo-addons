@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="knowledge_markdown.ImportMarkdown">
+        <DropdownItem class="'o_import_markdown_menu'" onSelected.bind="importMarkdown">
+            <i class="fa fa-fw fa-file-text-o me-1"/>Import Markdown
+        </DropdownItem>
+    </t>
+</templates>
