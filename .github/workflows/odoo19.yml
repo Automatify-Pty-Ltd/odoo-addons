@@ -13,6 +13,11 @@ concurrency:
   group: odoo19-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
+env:
+  OCA_KNOWLEDGE_COMMIT: e4a12c0c99866a5850840941d6f7ae3b3b27280d
+  ODOO_IMAGE: odoo:19.0-20260908
+  POSTGRES_IMAGE: postgres:16.15
+
 jobs:
   test:
     name: Install and test on Odoo 19
@@ -21,20 +26,30 @@ jobs:
 
     steps:
       - name: Check out addon repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
 
-      - name: Fetch OCA Knowledge 19.0
+      - name: Fetch pinned OCA Knowledge revision
+        shell: bash
         run: |
-          git clone --depth 1 --branch 19.0 \
-            https://github.com/OCA/knowledge.git \
-            "$RUNNER_TEMP/oca-knowledge"
+          set -euo pipefail
+          git init "$RUNNER_TEMP/oca-knowledge"
+          git -C "$RUNNER_TEMP/oca-knowledge" remote add origin https://github.com/OCA/knowledge.git
+          git -C "$RUNNER_TEMP/oca-knowledge" fetch --depth 1 origin "$OCA_KNOWLEDGE_COMMIT"
+          git -C "$RUNNER_TEMP/oca-knowledge" checkout --detach FETCH_HEAD
+          test "$(git -C "$RUNNER_TEMP/oca-knowledge" rev-parse HEAD)" = "$OCA_KNOWLEDGE_COMMIT"
 
-      - name: Build Odoo 19 test image
+      - name: Build pinned Odoo 19 test image
+        shell: bash
         run: |
-          cat > "$RUNNER_TEMP/Dockerfile.odoo-ci" <<'EOF'
-          FROM odoo:19.0
+          set -euo pipefail
+          cp "$GITHUB_WORKSPACE/.github/requirements-ci.txt" "$RUNNER_TEMP/requirements-ci.txt"
+          cat > "$RUNNER_TEMP/Dockerfile.odoo-ci" <<EOF
+          FROM ${ODOO_IMAGE}
           USER root
-          RUN pip3 install --no-cache-dir --break-system-packages "Markdown>=3.5,<4"
+          COPY requirements-ci.txt /tmp/requirements-ci.txt
+          RUN pip3 install --no-cache-dir --break-system-packages --require-hashes -r /tmp/requirements-ci.txt
           USER odoo
           EOF
           docker build \
@@ -43,7 +58,9 @@ jobs:
             "$RUNNER_TEMP"
 
       - name: Start PostgreSQL
+        shell: bash
         run: |
+          set -euo pipefail
           docker network create odoo19-ci
           docker run --detach --rm \
             --name db \
@@ -51,7 +68,7 @@ jobs:
             --env POSTGRES_DB=postgres \
             --env POSTGRES_USER=odoo \
             --env POSTGRES_PASSWORD=odoo \
-            postgres:16
+            "$POSTGRES_IMAGE"
 
           for attempt in $(seq 1 60); do
             if docker exec db pg_isready -U odoo -d postgres >/dev/null 2>&1; then
@@ -63,7 +80,9 @@ jobs:
           exit 1
 
       - name: Install addon and run Odoo tests
+        shell: bash
         run: |
+          set -euo pipefail
           docker run --rm \
             --name odoo19-ci-app \
             --network odoo19-ci \
