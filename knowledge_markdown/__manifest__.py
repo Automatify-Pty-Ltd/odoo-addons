@@ -1,6 +1,6 @@
 {
     "name": "Knowledge Markdown",
-    "version": "19.0.0.1.0",
+    "version": "19.0.1.0.0",
     "summary": "Import and export OCA Knowledge pages as Markdown",
     "category": "Knowledge",
     "author": "Automatify Pty Ltd",
