@@ -1,7 +1,10 @@
 import base64
 import hashlib
+from types import SimpleNamespace
 
 from odoo.tests.common import TransactionCase
+
+from odoo.addons.inventify_inventory_connect.controllers.main import _nearest_parent_location
 
 
 class TestInventifyInventoryConnect(TransactionCase):
@@ -56,3 +59,26 @@ class TestInventifyInventoryConnect(TransactionCase):
         self.assertTrue(warehouse)
         token_record.write({"inventify_root_location_id": warehouse.lot_stock_id.id})
         self.assertEqual(token_record.inventify_root_location_id, warehouse.lot_stock_id)
+
+    def test_parent_location_mapping_can_come_from_an_earlier_sync_batch(self):
+        parent_id = "11111111-1111-4111-8111-111111111111"
+        child = {
+            "id": "22222222-2222-4222-8222-222222222222",
+            "parent_id": parent_id,
+            "name": "Child item",
+            "type": "item",
+        }
+        existing_mapping = SimpleNamespace(
+            odoo_model="stock.location",
+            odoo_record_id=321,
+        )
+
+        self.assertEqual(
+            _nearest_parent_location(
+                child,
+                {child["id"]: child},
+                {parent_id: existing_mapping},
+                999,
+            ),
+            321,
+        )
