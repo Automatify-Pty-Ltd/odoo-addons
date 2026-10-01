@@ -9,6 +9,7 @@ class TestExternalAppConnect(TransactionCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
+        cls.user = cls.env.ref("base.user_admin")
         cls.profile_scope = cls.env.ref("external_app_connect.scope_profile_read")
         cls.client = cls.env["external.app.client"].create(
             {
@@ -28,7 +29,7 @@ class TestExternalAppConnect(TransactionCase):
             "external.app.authorization.code"
         ].create_authorization_code(
             self.client,
-            self.env.user,
+            self.user,
             "inventify://odoo-connected",
             ("profile:read",),
             self.challenge,
@@ -58,7 +59,7 @@ class TestExternalAppConnect(TransactionCase):
             "external.app.authorization.code"
         ].create_authorization_code(
             self.client,
-            self.env.user,
+            self.user,
             "inventify://odoo-connected",
             ("profile:read",),
             self.challenge,
@@ -76,7 +77,7 @@ class TestExternalAppConnect(TransactionCase):
             "external.app.authorization.code"
         ].create_authorization_code(
             self.client,
-            self.env.user,
+            self.user,
             "inventify://odoo-connected",
             ("profile:read",),
             self.challenge,
