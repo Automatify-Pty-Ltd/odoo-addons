@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_external_app_client_list" model="ir.ui.view">
+        <field name="name">external.app.client.list</field>
+        <field name="model">external.app.client</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="name"/>
+                <field name="client_id"/>
+                <field name="active"/>
+                <field name="token_lifetime_days"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_external_app_client_form" model="ir.ui.view">
+        <field name="name">external.app.client.form</field>
+        <field name="model">external.app.client</field>
+        <field name="arch" type="xml">
+            <form string="External App Client">
+                <sheet>
+                    <div class="oe_title">
+                        <label for="name"/>
+                        <h1><field name="name"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="active"/>
+                            <field name="client_id" readonly="1"/>
+                            <field name="website"/>
+                            <field name="token_lifetime_days"/>
+                        </group>
+                        <group>
+                            <field name="scope_ids" widget="many2many_tags"/>
+                        </group>
+                    </group>
+                    <group string="Registered redirect URIs">
+                        <field name="redirect_uris" nolabel="1" placeholder="inventify://odoo-connected&#10;https://app.example.com/odoo/callback"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_external_app_clients" model="ir.actions.act_window">
+        <field name="name">Applications</field>
+        <field name="res_model">external.app.client</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <record id="view_external_app_scope_list" model="ir.ui.view">
+        <field name="name">external.app.scope.list</field>
+        <field name="model">external.app.scope</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="code"/>
+                <field name="name"/>
+                <field name="active"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_external_app_scope_form" model="ir.ui.view">
+        <field name="name">external.app.scope.form</field>
+        <field name="model">external.app.scope</field>
+        <field name="arch" type="xml">
+            <form string="External App Scope">
+                <sheet>
+                    <group>
+                        <field name="active"/>
+                        <field name="code"/>
+                        <field name="name"/>
+                        <field name="description"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_external_app_scopes" model="ir.actions.act_window">
+        <field name="name">Scopes</field>
+        <field name="res_model">external.app.scope</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <record id="view_external_app_token_list" model="ir.ui.view">
+        <field name="name">external.app.access.token.list</field>
+        <field name="model">external.app.access.token</field>
+        <field name="arch" type="xml">
+            <list create="0">
+                <field name="name"/>
+                <field name="client_id"/>
+                <field name="user_id"/>
+                <field name="scope"/>
+                <field name="expires_at"/>
+                <field name="revoked_at"/>
+                <field name="last_used_at"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_external_app_tokens" model="ir.actions.act_window">
+        <field name="name">Connections</field>
+        <field name="res_model">external.app.access.token</field>
+        <field name="view_mode">list</field>
+    </record>
+
+    <menuitem id="menu_external_app_connect_root" name="App Connect" sequence="95" groups="base.group_system"/>
+    <menuitem id="menu_external_app_clients" name="Applications" parent="menu_external_app_connect_root" action="action_external_app_clients" sequence="10" groups="base.group_system"/>
+    <menuitem id="menu_external_app_scopes" name="Scopes" parent="menu_external_app_connect_root" action="action_external_app_scopes" sequence="20" groups="base.group_system"/>
+    <menuitem id="menu_external_app_tokens" name="Connections" parent="menu_external_app_connect_root" action="action_external_app_tokens" sequence="30" groups="base.group_system"/>
+</odoo>

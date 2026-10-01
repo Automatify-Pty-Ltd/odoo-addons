@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <record id="scope_profile_read" model="external.app.scope">
+        <field name="name">Read basic profile</field>
+        <field name="code">profile:read</field>
+        <field name="description">Read the connected user's display name and current company.</field>
+    </record>
+</odoo>

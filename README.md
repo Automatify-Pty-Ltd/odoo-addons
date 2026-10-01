@@ -9,6 +9,7 @@ This repository contains small, focused modules that solve practical Odoo proble
 | Addon | Odoo | Purpose |
 | --- | --- | --- |
 | [`knowledge_markdown`](knowledge_markdown/) | 19.0 | Import and export OCA Knowledge pages as Markdown. |
+| [`external_app_connect`](external_app_connect/) | 19.0 | Secure authorization-code + PKCE connections from external apps to scoped Odoo endpoints. |
 
 Each addon documents its own dependencies, installation steps, supported scope, and license.
 
