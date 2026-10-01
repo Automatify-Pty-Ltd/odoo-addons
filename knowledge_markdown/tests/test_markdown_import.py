@@ -7,30 +7,23 @@ class TestMarkdownImport(TransactionCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        cls.category = cls.env["document.page"].create(
+        cls.category = cls.env["knowledge.markdown.page"].create(
             {
                 "name": "Markdown Category",
-                "type": "category",
+                "page_type": "category",
             }
         )
-        cls.page = cls.env["document.page"].create(
+        cls.page = cls.env["knowledge.markdown.page"].create(
             {
                 "name": "Markdown Test",
-                "type": "content",
+                "page_type": "content",
                 "parent_id": cls.category.id,
             }
         )
-        cls.page._create_history(
-            {
-                "page_id": cls.page.id,
-                "name": "Initial",
-                "summary": "Initial content",
-                "content": "<p>Before</p>",
-            }
-        )
+        cls.page.create_revision("Initial", "Initial content", "<p>Before</p>")
 
     def test_import_creates_new_history_revision(self):
-        before_count = self.env["document.page.history"].search_count(
+        before_count = self.env["knowledge.markdown.page.history"].search_count(
             [("page_id", "=", self.page.id)]
         )
         wizard = self.env["knowledge.markdown.import.wizard"].create(
@@ -46,10 +39,10 @@ class TestMarkdownImport(TransactionCase):
         )
 
         action = wizard.action_import()
-        after_count = self.env["document.page.history"].search_count(
+        after_count = self.env["knowledge.markdown.page.history"].search_count(
             [("page_id", "=", self.page.id)]
         )
-        latest = self.env["document.page.history"].search(
+        latest = self.env["knowledge.markdown.page.history"].search(
             [("page_id", "=", self.page.id)], order="id DESC", limit=1
         )
 
@@ -58,6 +51,7 @@ class TestMarkdownImport(TransactionCase):
         self.assertEqual(latest.summary, "Imported from architecture.md")
         self.assertIn("<h1>Imported</h1>", latest.content)
         self.assertIn('data-language-id="mermaid"', latest.content)
+        self.assertIn("<h1>Imported</h1>", self.page.content)
         self.assertEqual(action, {"type": "ir.actions.client", "tag": "reload"})
 
     def test_import_can_create_new_page_from_file(self):
@@ -74,17 +68,20 @@ class TestMarkdownImport(TransactionCase):
         )
 
         action = wizard.action_import()
-        page = self.env["document.page"].browse(action["res_id"])
+        page = self.env["knowledge.markdown.page"].browse(action["res_id"])
+        latest = self.env["knowledge.markdown.page.history"].search(
+            [("page_id", "=", page.id)], order="id DESC", limit=1
+        )
 
         self.assertTrue(page.exists())
         self.assertEqual(page.name, "Architecture Notes")
         self.assertEqual(page.parent_id, self.category)
-        self.assertEqual(page.type, "content")
-        self.assertEqual(page.history_head.name, "Markdown import")
-        self.assertEqual(page.history_head.summary, "Imported from architecture-notes.md")
+        self.assertEqual(page.page_type, "content")
+        self.assertEqual(latest.name, "Markdown import")
+        self.assertEqual(latest.summary, "Imported from architecture-notes.md")
         self.assertIn("<h1>Architecture Notes</h1>", page.content)
         self.assertIn('data-language-id="mermaid"', page.content)
-        self.assertEqual(action["res_model"], "document.page")
+        self.assertEqual(action["res_model"], "knowledge.markdown.page")
         self.assertEqual(action["view_mode"], "form")
 
     def test_explicit_title_overrides_markdown_heading(self):
@@ -100,5 +97,5 @@ class TestMarkdownImport(TransactionCase):
         )
 
         action = wizard.action_import()
-        page = self.env["document.page"].browse(action["res_id"])
+        page = self.env["knowledge.markdown.page"].browse(action["res_id"])
         self.assertEqual(page.name, "Custom title")

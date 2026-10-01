@@ -25,14 +25,14 @@ class MarkdownImportWizard(models.TransientModel):
         readonly=True,
     )
     page_id = fields.Many2one(
-        "document.page",
+        "knowledge.markdown.page",
         readonly=True,
-        domain=[("type", "=", "content")],
+        domain=[("page_type", "=", "content")],
     )
     parent_id = fields.Many2one(
-        "document.page",
+        "knowledge.markdown.page",
         string="Category",
-        domain=[("type", "=", "category")],
+        domain=[("page_type", "=", "category")],
     )
     page_name = fields.Char(
         string="Title",
@@ -57,47 +57,33 @@ class MarkdownImportWizard(models.TransientModel):
 
     def _import_into_existing(self, converted, summary):
         page = self.page_id.exists()
-        if not page or page.type != "content":
+        if not page or page.page_type != "content":
             raise UserError(_("The target Knowledge page no longer exists."))
         page.check_access("write")
-        page._create_history(
-            {
-                "page_id": page.id,
-                "name": self.revision_name,
-                "summary": summary,
-                "content": converted,
-            }
-        )
+        page.create_revision(self.revision_name, summary, converted)
         return {"type": "ir.actions.client", "tag": "reload"}
 
     def _create_page(self, source, converted, filename, summary):
         parent = self.parent_id.exists()
-        if not parent or parent.type != "category":
+        if not parent or parent.page_type != "category":
             raise UserError(_("Choose a Knowledge category for the new page."))
         parent.check_access("read")
 
-        Page = self.env["document.page"]
+        Page = self.env["knowledge.markdown.page"]
         Page.check_access("create")
         title = self._page_title(source, filename)
         page = Page.create(
             {
                 "name": title,
-                "type": "content",
+                "page_type": "content",
                 "parent_id": parent.id,
             }
         )
-        page._create_history(
-            {
-                "page_id": page.id,
-                "name": self.revision_name,
-                "summary": summary,
-                "content": converted,
-            }
-        )
+        page.create_revision(self.revision_name, summary, converted)
         return {
             "type": "ir.actions.act_window",
             "name": page.name,
-            "res_model": "document.page",
+            "res_model": "knowledge.markdown.page",
             "res_id": page.id,
             "view_mode": "form",
             "target": "current",

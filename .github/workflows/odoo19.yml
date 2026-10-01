@@ -14,7 +14,6 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  OCA_KNOWLEDGE_COMMIT: e4a12c0c99866a5850840941d6f7ae3b3b27280d
   ODOO_IMAGE: odoo:19.0-20260908
   POSTGRES_IMAGE: postgres:16.15
 
@@ -30,15 +29,15 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Fetch pinned OCA Knowledge revision
+      - name: Verify addon has no OCA module dependency
         shell: bash
         run: |
           set -euo pipefail
-          git init "$RUNNER_TEMP/oca-knowledge"
-          git -C "$RUNNER_TEMP/oca-knowledge" remote add origin https://github.com/OCA/knowledge.git
-          git -C "$RUNNER_TEMP/oca-knowledge" fetch --depth 1 origin "$OCA_KNOWLEDGE_COMMIT"
-          git -C "$RUNNER_TEMP/oca-knowledge" checkout --detach FETCH_HEAD
-          test "$(git -C "$RUNNER_TEMP/oca-knowledge" rev-parse HEAD)" = "$OCA_KNOWLEDGE_COMMIT"
+          if grep -R -n -E 'document[._]page|document_knowledge' knowledge_markdown \
+            --include='*.py' --include='*.xml' --include='*.js'; then
+            echo "Unexpected OCA Knowledge dependency found."
+            exit 1
+          fi
 
       - name: Build pinned Odoo 19 test image
         shell: bash
@@ -87,13 +86,12 @@ jobs:
             --name odoo19-ci-app \
             --network odoo19-ci \
             --volume "$GITHUB_WORKSPACE:/mnt/extra-addons:ro" \
-            --volume "$RUNNER_TEMP/oca-knowledge:/mnt/oca-knowledge:ro" \
             automatify-odoo19-ci \
             odoo \
             --database=odoo19_ci \
             --without-demo=true \
             --http-interface=127.0.0.1 \
-            --addons-path=/usr/lib/python3/dist-packages/odoo/addons,/mnt/oca-knowledge,/mnt/extra-addons \
+            --addons-path=/usr/lib/python3/dist-packages/odoo/addons,/mnt/extra-addons \
             --init=knowledge_markdown \
             --test-tags=/knowledge_markdown \
             --stop-after-init \
