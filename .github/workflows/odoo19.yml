@@ -79,23 +79,42 @@ jobs:
           docker logs db
           exit 1
 
-      - name: Install addon and run Odoo tests
+      - name: Install Knowledge Markdown and run tests
         shell: bash
         run: |
           set -euo pipefail
           docker run --rm \
-            --name odoo19-ci-app \
+            --name odoo19-ci-knowledge \
             --network odoo19-ci \
             --volume "$GITHUB_WORKSPACE:/mnt/extra-addons:ro" \
             --volume "$RUNNER_TEMP/oca-knowledge:/mnt/oca-knowledge:ro" \
             automatify-odoo19-ci \
             odoo \
-            --database=odoo19_ci \
+            --database=odoo19_ci_knowledge \
             --without-demo=true \
             --http-interface=127.0.0.1 \
             --addons-path=/usr/lib/python3/dist-packages/odoo/addons,/mnt/oca-knowledge,/mnt/extra-addons \
             --init=knowledge_markdown \
             --test-tags=/knowledge_markdown \
+            --stop-after-init \
+            --log-level=test
+
+      - name: Install External App Connect and run tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker run --rm \
+            --name odoo19-ci-connect \
+            --network odoo19-ci \
+            --volume "$GITHUB_WORKSPACE:/mnt/extra-addons:ro" \
+            automatify-odoo19-ci \
+            odoo \
+            --database=odoo19_ci_connect \
+            --without-demo=true \
+            --http-interface=127.0.0.1 \
+            --addons-path=/usr/lib/python3/dist-packages/odoo/addons,/mnt/extra-addons \
+            --init=external_app_connect \
+            --test-tags=/external_app_connect \
             --stop-after-init \
             --log-level=test
 
