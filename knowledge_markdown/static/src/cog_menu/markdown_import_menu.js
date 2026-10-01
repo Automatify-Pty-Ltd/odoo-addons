@@ -26,7 +26,7 @@ export const importMarkdownItem = {
     groupNumber: STATIC_ACTIONS_GROUP_NUMBER,
     isDisplayed: ({ config, isSmall, searchModel }) =>
         !isSmall &&
-        searchModel.resModel === "document.page" &&
+        searchModel.resModel === "knowledge.markdown.page" &&
         config.actionType === "ir.actions.act_window" &&
         ["kanban", "list"].includes(config.viewType) &&
         exprToBoolean(config.viewArch.getAttribute("create"), true),

@@ -7,23 +7,20 @@ class TestMarkdownHttpExport(HttpCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        cls.page = cls.env["document.page"].create(
+        cls.page = cls.env["knowledge.markdown.page"].create(
             {
                 "name": "Export Test",
-                "type": "content",
+                "page_type": "content",
             }
         )
-        cls.page._create_history(
-            {
-                "page_id": cls.page.id,
-                "name": "Initial",
-                "summary": "Export fixture",
-                "content": (
-                    "<h1>Exported</h1>"
-                    '<pre data-embedded="readonlySyntaxHighlighting" '
-                    'data-language-id="mermaid">flowchart LR<br>A --&gt; B</pre>'
-                ),
-            }
+        cls.page.create_revision(
+            "Initial",
+            "Export fixture",
+            (
+                "<h1>Exported</h1>"
+                '<pre data-embedded="readonlySyntaxHighlighting" '
+                'data-language-id="mermaid">flowchart LR<br>A --&gt; B</pre>'
+            ),
         )
 
     def test_authenticated_export_downloads_markdown(self):

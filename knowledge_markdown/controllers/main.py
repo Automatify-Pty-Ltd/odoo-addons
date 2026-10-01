@@ -15,8 +15,8 @@ class KnowledgeMarkdownController(Controller):
         methods=["GET"],
     )
     def export_markdown(self, page_id, **kwargs):
-        page = request.env["document.page"].browse(page_id).exists()
-        if not page or page.type != "content":
+        page = request.env["knowledge.markdown.page"].browse(page_id).exists()
+        if not page or page.page_type != "content":
             raise NotFound()
 
         try:

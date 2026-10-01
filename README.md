@@ -2,15 +2,17 @@
 
 Open-source Odoo addons maintained by Automatify Pty Ltd.
 
-This repository contains small, focused modules that solve practical Odoo problems without depending on Automatify infrastructure or services.
+This repository contains small, focused modules that solve practical Odoo problems
+without depending on Automatify infrastructure or services.
 
 ## Addons
 
 | Addon | Odoo | Purpose |
 | --- | --- | --- |
-| [`knowledge_markdown`](knowledge_markdown/) | 19.0 | Import and export OCA Knowledge pages as Markdown. |
+| [`knowledge_markdown`](knowledge_markdown/) | 19.0 | Self-contained Markdown knowledge pages with import, revision history, and export. |
 
-Each addon documents its own dependencies, installation steps, supported scope, and license.
+Each addon documents its own dependencies, installation steps, supported scope,
+and license.
 
 ## Contributing
 

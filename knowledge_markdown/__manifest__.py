@@ -1,17 +1,17 @@
 {
     "name": "Knowledge Markdown",
-    "version": "19.0.1.0.0",
-    "summary": "Import and export OCA Knowledge pages as Markdown",
+    "version": "19.0.2.0.0",
+    "summary": "Create, import, edit, and export Markdown knowledge pages",
     "category": "Knowledge",
     "author": "Automatify Pty Ltd",
     "website": "https://github.com/Automatify-Pty-Ltd/odoo-addons",
     "license": "AGPL-3",
-    "depends": ["document_page"],
+    "depends": ["mail", "html_editor"],
     "external_dependencies": {"python": ["markdown"]},
     "data": [
         "security/ir.model.access.csv",
+        "views/knowledge_page_views.xml",
         "views/markdown_import_wizard_views.xml",
-        "views/document_page_views.xml",
     ],
     "assets": {
         "web.assets_backend": [
@@ -21,5 +21,5 @@
     },
     "images": ["static/description/banner.png"],
     "installable": True,
-    "application": False,
+    "application": True,
 }

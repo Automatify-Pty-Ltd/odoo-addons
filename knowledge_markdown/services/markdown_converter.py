@@ -49,7 +49,7 @@ _BACKTICK_RUN_RE = re.compile(r"`+")
 
 
 def markdown_to_html(source):
-    """Convert Markdown into sanitized HTML suitable for document.page.content."""
+    """Convert Markdown into sanitized HTML suitable for Knowledge page content."""
     if markdown is None:
         raise RuntimeError("The Python 'Markdown' package is required.")
 

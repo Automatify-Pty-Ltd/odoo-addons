@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="view_knowledge_markdown_page_list" model="ir.ui.view">
+        <field name="name">knowledge.markdown.page.list</field>
+        <field name="model">knowledge.markdown.page</field>
+        <field name="arch" type="xml">
+            <list string="Knowledge Pages">
+                <field name="sequence" widget="handle" />
+                <field name="name" />
+                <field name="page_type" />
+                <field name="parent_id" />
+                <field name="write_date" />
+            </list>
+        </field>
+    </record>
+
+    <record id="view_knowledge_markdown_page_form" model="ir.ui.view">
+        <field name="name">knowledge.markdown.page.form</field>
+        <field name="model">knowledge.markdown.page</field>
+        <field name="arch" type="xml">
+            <form string="Knowledge Page">
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button
+                            name="action_open_markdown_import"
+                            type="object"
+                            class="oe_stat_button"
+                            icon="fa-upload"
+                            help="Replace this saved page from a Markdown file"
+                            invisible="not id or page_type != 'content'"
+                        >
+                            <div class="o_field_widget o_stat_info">
+                                <span class="o_stat_text">Import Markdown</span>
+                            </div>
+                        </button>
+                        <button
+                            name="action_export_markdown"
+                            type="object"
+                            class="oe_stat_button"
+                            icon="fa-download"
+                            help="Download this saved page as Markdown"
+                            invisible="not id or page_type != 'content'"
+                        >
+                            <div class="o_field_widget o_stat_info">
+                                <span class="o_stat_text">Export Markdown</span>
+                            </div>
+                        </button>
+                    </div>
+                    <group>
+                        <field name="name" />
+                        <field name="page_type" />
+                        <field
+                            name="parent_id"
+                            options="{'no_create': True}"
+                            invisible="page_type == 'category'"
+                            required="page_type == 'content'"
+                        />
+                        <field name="sequence" />
+                        <field name="active" invisible="1" />
+                    </group>
+                    <field
+                        name="content"
+                        widget="html"
+                        invisible="page_type != 'content'"
+                        placeholder="Write here or import a Markdown file..."
+                    />
+                    <notebook invisible="page_type != 'content'">
+                        <page string="Revisions">
+                            <field name="history_ids" readonly="1">
+                                <list create="0" edit="0" delete="0">
+                                    <field name="create_date" />
+                                    <field name="name" />
+                                    <field name="summary" />
+                                    <field name="author_id" />
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter />
+            </form>
+        </field>
+    </record>
+
+    <record id="action_knowledge_markdown_pages" model="ir.actions.act_window">
+        <field name="name">Pages</field>
+        <field name="res_model">knowledge.markdown.page</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('page_type', '=', 'content')]</field>
+        <field name="context">{'default_page_type': 'content'}</field>
+    </record>
+
+    <record id="action_knowledge_markdown_categories" model="ir.actions.act_window">
+        <field name="name">Categories</field>
+        <field name="res_model">knowledge.markdown.page</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('page_type', '=', 'category')]</field>
+        <field name="context">{'default_page_type': 'category'}</field>
+    </record>
+
+    <menuitem id="menu_knowledge_markdown_root" name="Knowledge Markdown" sequence="45" />
+    <menuitem
+        id="menu_knowledge_markdown_pages"
+        name="Pages"
+        parent="menu_knowledge_markdown_root"
+        action="action_knowledge_markdown_pages"
+        sequence="10"
+    />
+    <menuitem
+        id="menu_knowledge_markdown_categories"
+        name="Categories"
+        parent="menu_knowledge_markdown_root"
+        action="action_knowledge_markdown_categories"
+        sequence="20"
+    />
+</odoo>
