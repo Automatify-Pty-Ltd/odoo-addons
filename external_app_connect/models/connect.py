@@ -19,7 +19,11 @@ def _hash_secret(value):
 
 
 def _scope_tokens(value):
-    return tuple(dict.fromkeys(part for part in (value or "").split() if part))
+    if not value:
+        return ()
+    parts = value.split() if isinstance(value, str) else value
+    normalized = (str(part).strip() for part in parts)
+    return tuple(dict.fromkeys(part for part in normalized if part))
 
 
 def _pkce_challenge(verifier):
@@ -37,9 +41,7 @@ class ExternalAppScope(models.Model):
     description = fields.Text(translate=True)
     active = fields.Boolean(default=True)
 
-    _sql_constraints = [
-        ("external_app_scope_code_unique", "unique(code)", "Scope code must be unique."),
-    ]
+    _code_unique = models.Constraint("UNIQUE(code)", "Scope code must be unique.")
 
     @api.constrains("code")
     def _check_code(self):
@@ -82,9 +84,7 @@ class ExternalAppClient(models.Model):
         help="Lifetime of issued connector tokens. Capped at 90 days by this module.",
     )
 
-    _sql_constraints = [
-        ("external_app_client_id_unique", "unique(client_id)", "Client ID must be unique."),
-    ]
+    _client_id_unique = models.Constraint("UNIQUE(client_id)", "Client ID must be unique.")
 
     @api.constrains("token_lifetime_days")
     def _check_token_lifetime_days(self):
@@ -154,9 +154,9 @@ class ExternalAppAuthorizationCode(models.Model):
     expires_at = fields.Datetime(required=True, readonly=True, index=True)
     consumed_at = fields.Datetime(readonly=True, index=True)
 
-    _sql_constraints = [
-        ("external_app_code_hash_unique", "unique(code_hash)", "Authorization code hash must be unique."),
-    ]
+    _code_hash_unique = models.Constraint(
+        "UNIQUE(code_hash)", "Authorization code hash must be unique."
+    )
 
     @api.model
     def create_authorization_code(self, client, user, redirect_uri, scope, code_challenge):
@@ -225,9 +225,7 @@ class ExternalAppAccessToken(models.Model):
     revoked_at = fields.Datetime(readonly=True, index=True)
     last_used_at = fields.Datetime(readonly=True)
 
-    _sql_constraints = [
-        ("external_app_token_hash_unique", "unique(token_hash)", "Access token hash must be unique."),
-    ]
+    _token_hash_unique = models.Constraint("UNIQUE(token_hash)", "Access token hash must be unique.")
 
     @api.model
     def issue_for_code(self, code_record):
