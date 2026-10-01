@@ -1,0 +1,5 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_external_app_scope_system,external.app.scope system,model_external_app_scope,base.group_system,1,1,1,1
+access_external_app_client_system,external.app.client system,model_external_app_client,base.group_system,1,1,1,1
+access_external_app_authorization_code_system,external.app.authorization.code system,model_external_app_authorization_code,base.group_system,1,0,0,1
+access_external_app_access_token_system,external.app.access.token system,model_external_app_access_token,base.group_system,1,1,0,1
