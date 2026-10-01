@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <record id="scope_inventify_inventory_read" model="external.app.scope">
+        <field name="name">Read Inventory setup</field>
+        <field name="code">inventify:inventory:read</field>
+        <field name="description">Read the connected company, warehouses, and eligible Inventory root locations so Inventify can configure synchronization.</field>
+    </record>
+    <record id="scope_inventify_inventory_write" model="external.app.scope">
+        <field name="name">Synchronize Inventory</field>
+        <field name="code">inventify:inventory:write</field>
+        <field name="description">Create and update Inventory locations, products, and Inventify-managed on-hand quantities through narrow Inventify endpoints.</field>
+    </record>
+</odoo>

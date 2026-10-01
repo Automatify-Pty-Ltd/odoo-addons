@@ -22,7 +22,7 @@ jobs:
   test:
     name: Install and test on Odoo 19
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
 
     steps:
       - name: Check out addon repository
@@ -115,6 +115,25 @@ jobs:
             --addons-path=/usr/lib/python3/dist-packages/odoo/addons,/mnt/extra-addons \
             --init=external_app_connect \
             --test-tags=/external_app_connect \
+            --stop-after-init \
+            --log-level=test
+
+      - name: Install Inventify Inventory Connect and run tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker run --rm \
+            --name odoo19-ci-inventify-connect \
+            --network odoo19-ci \
+            --volume "$GITHUB_WORKSPACE:/mnt/extra-addons:ro" \
+            automatify-odoo19-ci \
+            odoo \
+            --database=odoo19_ci_inventify_connect \
+            --without-demo=true \
+            --http-interface=127.0.0.1 \
+            --addons-path=/usr/lib/python3/dist-packages/odoo/addons,/mnt/extra-addons \
+            --init=inventify_inventory_connect \
+            --test-tags=/inventify_inventory_connect \
             --stop-after-init \
             --log-level=test
 
