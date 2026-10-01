@@ -403,7 +403,11 @@ class InventifyInventoryConnectController(http.Controller):
         user = token.user_id
         by_id = {entity["id"]: entity for entity in entities}
         counts = _child_counts(entities)
-        mappings = _mapping_dict(token, by_id.keys())
+        mapping_ids = set(by_id)
+        mapping_ids.update(
+            entity["parent_id"] for entity in entities if entity.get("parent_id")
+        )
+        mappings = _mapping_dict(token, mapping_ids)
         root_id = token.inventify_root_location_id.id
         result = {
             "total": len(entities),
@@ -416,49 +420,56 @@ class InventifyInventoryConnectController(http.Controller):
 
         for entity in ordered:
             try:
-                mapping = mappings.get(entity["id"])
-                parent_location_id = _nearest_parent_location(entity, by_id, mappings, root_id)
-                if _maps_to_location(entity, counts):
-                    if mapping and mapping.odoo_model != "stock.location":
-                        raise ValidationError("Entity changed between item and location; reconnect or remove its old mapping first.")
-                    record, created = _ensure_location(entity, parent_location_id, mapping, user)
-                    new_mapping = _write_mapping(
-                        token,
-                        entity,
-                        "stock.location",
-                        record.id,
+                with request.env.cr.savepoint():
+                    mapping = mappings.get(entity["id"])
+                    parent_location_id = _nearest_parent_location(
+                        entity, by_id, mappings, root_id
                     )
-                else:
-                    if mapping and mapping.odoo_model != "product.product":
-                        raise ValidationError("Entity changed between location and item; reconnect or remove its old mapping first.")
-                    record, created = _ensure_product(entity, mapping, user)
-                    old_location_id = mapping.odoo_location_id if mapping else None
-                    if old_location_id and old_location_id != parent_location_id:
-                        _set_inventory_count(record.id, old_location_id, 0, user)
-                    _set_inventory_count(record.id, parent_location_id, 1, user)
-                    new_mapping = _write_mapping(
-                        token,
-                        entity,
-                        "product.product",
-                        record.id,
-                        parent_location_id,
-                    )
+                    if _maps_to_location(entity, counts):
+                        if mapping and mapping.odoo_model != "stock.location":
+                            raise ValidationError(
+                                "Entity changed between item and location; reconnect or remove its old mapping first."
+                            )
+                        record, created = _ensure_location(
+                            entity, parent_location_id, mapping, user
+                        )
+                        new_mapping = _write_mapping(
+                            token,
+                            entity,
+                            "stock.location",
+                            record.id,
+                        )
+                    else:
+                        if mapping and mapping.odoo_model != "product.product":
+                            raise ValidationError(
+                                "Entity changed between location and item; reconnect or remove its old mapping first."
+                            )
+                        record, created = _ensure_product(entity, mapping, user)
+                        old_location_id = mapping.odoo_location_id if mapping else None
+                        if old_location_id and old_location_id != parent_location_id:
+                            _set_inventory_count(record.id, old_location_id, 0, user)
+                        _set_inventory_count(record.id, parent_location_id, 1, user)
+                        new_mapping = _write_mapping(
+                            token,
+                            entity,
+                            "product.product",
+                            record.id,
+                            parent_location_id,
+                        )
                 mappings[entity["id"]] = new_mapping
                 result["synced"] += 1
                 result["created" if created else "updated"] += 1
             except (AccessError, UserError, ValidationError) as error:
-                request.env.cr.rollback()
                 result["failed"] += 1
                 result["failures"].append(
                     {"entityId": entity["id"], "message": str(error)[:300]}
                 )
-                mappings = _mapping_dict(token, by_id.keys())
+                mappings = _mapping_dict(token, mapping_ids)
             except Exception:
-                request.env.cr.rollback()
                 result["failed"] += 1
                 result["failures"].append(
                     {"entityId": entity["id"], "message": "Unexpected Odoo Inventory error."}
                 )
-                mappings = _mapping_dict(token, by_id.keys())
+                mappings = _mapping_dict(token, mapping_ids)
 
         return _json_response(result)
