@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <record id="external_app_client_inventify" model="external.app.client">
+        <field name="name">Inventify</field>
+        <field name="client_id">inventify.mobile.v1</field>
+        <field name="website">https://automatify.com.au</field>
+        <field name="redirect_uris">https://xrikoshdvntnuypticgc.supabase.co/functions/v1/odoo-connect-callback
+inventify://odoo-connected</field>
+        <field name="scope_ids" eval="[(6, 0, [ref('external_app_connect.scope_profile_read'), ref('inventify_inventory_connect.scope_inventify_inventory_read'), ref('inventify_inventory_connect.scope_inventify_inventory_write')])]"/>
+        <field name="token_lifetime_days">30</field>
+    </record>
+</odoo>
