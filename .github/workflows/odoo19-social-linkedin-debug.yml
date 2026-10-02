@@ -51,7 +51,7 @@ jobs:
           set -euo pipefail
           docker network create odoo19-ci-linkedin-debug
           docker run --detach --rm \
-            --name db-linkedin-debug \
+            --name db \
             --network odoo19-ci-linkedin-debug \
             --env POSTGRES_DB=postgres \
             --env POSTGRES_USER=odoo \
@@ -59,12 +59,12 @@ jobs:
             "$POSTGRES_IMAGE"
 
           for attempt in $(seq 1 60); do
-            if docker exec db-linkedin-debug pg_isready -U odoo -d postgres >/dev/null 2>&1; then
+            if docker exec db pg_isready -U odoo -d postgres >/dev/null 2>&1; then
               exit 0
             fi
             sleep 1
           done
-          docker logs db-linkedin-debug
+          docker logs db
           exit 1
 
       - name: Install Social Publisher LinkedIn and run tests with captured output
@@ -109,11 +109,11 @@ jobs:
       - name: Show database logs on failure
         if: failure()
         shell: bash
-        run: docker logs db-linkedin-debug || true
+        run: docker logs db || true
 
       - name: Clean up
         if: always()
         shell: bash
         run: |
-          docker rm --force db-linkedin-debug 2>/dev/null || true
+          docker rm --force db 2>/dev/null || true
           docker network rm odoo19-ci-linkedin-debug 2>/dev/null || true
