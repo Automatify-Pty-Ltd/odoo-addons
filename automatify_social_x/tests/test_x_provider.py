@@ -1,5 +1,6 @@
 from unittest.mock import Mock, patch
 
+from odoo.exceptions import UserError
 from odoo.tests.common import TransactionCase
 
 
@@ -43,8 +44,12 @@ class TestXProvider(TransactionCase):
         with patch.object(
             type(self.account), "_x_get_access_token", return_value="token"
         ):
-            with self.assertRaises(Exception):
+            try:
                 self.account._get_social_provider().publish(self.account, self.post)
+            except UserError:
+                pass
+            else:
+                self.fail("Expected X 403 to raise UserError")
 
         self.assertEqual(self.account.connection_state, "error")
         self.assertIn("403", self.account.last_error)
