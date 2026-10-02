@@ -11,10 +11,19 @@ This repository contains small, focused modules that solve practical Odoo proble
 | [`knowledge_markdown`](knowledge_markdown/) | 19.0 | Import and export OCA Knowledge pages as Markdown. |
 | [`external_app_connect`](external_app_connect/) | 19.0 | Secure authorization-code + PKCE connections from external apps to scoped Odoo endpoints. |
 | [`inventify_inventory_connect`](inventify_inventory_connect/) | 19.0 | One-click Inventify connection, Inventory discovery, and per-connection root configuration. |
+| [`automatify_social`](automatify_social/) | 19.0 | Open social publishing core with scheduling, retries, multi-company isolation, and connector hooks. |
+| [`automatify_social_linkedin`](automatify_social_linkedin/) | 19.0 | LinkedIn OAuth and text-post publishing connector for Social Publisher. |
+| [`automatify_social_x`](automatify_social_x/) | 19.0 | X OAuth 2.0 PKCE and text-post publishing connector for Social Publisher. |
 
 `external_app_connect` is the reusable connection/security layer. App-specific addons such as `inventify_inventory_connect` add narrow business scopes and endpoints without exposing generic Odoo RPC access.
 
-Each addon documents its own dependencies, installation steps, supported scope, and license.
+The Social Publisher connectors contain no provider credentials. Each installation uses its own provider developer app, permissions, API access, and provider-side limits. Internal Automatify deployment configuration is deliberately kept outside this public repository.
+
+Each addon documents its own dependencies, installation steps, supported scope, external services, and license.
+
+## Security
+
+Do not commit credentials, access tokens, private keys, internal deployment configuration, or customer/account identifiers. See [SECURITY.md](SECURITY.md) for private vulnerability reporting.
 
 ## Contributing
 
