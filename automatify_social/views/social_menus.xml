@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <menuitem id="menu_automatify_social_root" name="Social Marketing" sequence="70" groups="automatify_social.group_automatify_social_user"/>
+    <menuitem id="menu_automatify_social_posts" name="Posts" parent="menu_automatify_social_root" action="action_automatify_social_posts" sequence="10"/>
+    <menuitem id="menu_automatify_social_calendar" name="Calendar" parent="menu_automatify_social_root" action="action_automatify_social_calendar" sequence="20"/>
+    <menuitem id="menu_automatify_social_configuration" name="Configuration" parent="menu_automatify_social_root" sequence="90" groups="automatify_social.group_automatify_social_manager"/>
+    <menuitem id="menu_automatify_social_accounts" name="Social Accounts" parent="menu_automatify_social_configuration" action="action_automatify_social_accounts" sequence="10"/>
+</odoo>

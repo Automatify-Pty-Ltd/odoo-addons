@@ -1,0 +1,20 @@
+{
+    "name": "Social Publisher X",
+    "version": "19.0.1.0.0",
+    "summary": "X connector for Social Publisher",
+    "author": "Automatify Pty Ltd",
+    "website": "https://automatify.com.au",
+    "support": "admin@automatify.com.au",
+    "license": "LGPL-3",
+    "category": "Marketing/Social Marketing",
+    "depends": ["automatify_social"],
+    "external_dependencies": {"python": ["requests"]},
+    "data": [
+        "security/ir.model.access.csv",
+        "views/social_account_views.xml",
+        "views/x_settings_views.xml",
+    ],
+    "installable": True,
+    "auto_install": False,
+    "application": False,
+}

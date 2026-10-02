@@ -1,0 +1,2 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_automatify_social_x_settings_manager,x.settings.manager,model_automatify_social_x_settings,automatify_social.group_automatify_social_manager,1,1,1,1

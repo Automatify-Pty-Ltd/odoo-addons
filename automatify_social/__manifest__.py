@@ -1,0 +1,22 @@
+{
+    "name": "Social Publisher",
+    "version": "19.0.1.0.0",
+    "summary": "Open social publishing core for Odoo Community",
+    "author": "Automatify Pty Ltd",
+    "website": "https://automatify.com.au",
+    "support": "admin@automatify.com.au",
+    "license": "LGPL-3",
+    "category": "Marketing/Social Marketing",
+    "depends": ["base", "mail"],
+    "data": [
+        "security/social_security.xml",
+        "security/ir.model.access.csv",
+        "views/social_account_views.xml",
+        "views/social_post_views.xml",
+        "views/social_menus.xml",
+        "data/social_cron.xml",
+    ],
+    "installable": True,
+    "auto_install": False,
+    "application": True,
+}
