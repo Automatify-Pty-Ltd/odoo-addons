@@ -14,6 +14,7 @@ class AutomatifySocialXOAuthState(models.Model):
     user_id = fields.Many2one("res.users", required=True, ondelete="cascade", index=True)
     expires_at = fields.Datetime(required=True, index=True)
 
-    _sql_constraints = [
-        ("x_oauth_state_token_unique", "unique(token)", "OAuth state must be unique."),
-    ]
+    _token_unique = models.Constraint(
+        "unique(token)",
+        "OAuth state must be unique.",
+    )
