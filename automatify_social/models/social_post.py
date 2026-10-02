@@ -238,13 +238,10 @@ class AutomatifySocialPostTarget(models.Model):
     published_at = fields.Datetime(readonly=True)
     error_message = fields.Text(readonly=True)
 
-    _sql_constraints = [
-        (
-            "post_account_unique",
-            "unique(post_id, account_id)",
-            "The same social account can only be added once to a post.",
-        )
-    ]
+    _post_account_unique = models.Constraint(
+        "unique(post_id, account_id)",
+        "The same social account can only be added once to a post.",
+    )
 
     @api.constrains("post_id", "account_id")
     def _check_company_match(self):
