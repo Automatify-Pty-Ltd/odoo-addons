@@ -1,5 +1,6 @@
 from unittest.mock import Mock, patch
 
+from odoo.exceptions import UserError
 from odoo.tests.common import TransactionCase
 
 
@@ -46,8 +47,16 @@ class TestLinkedInProvider(TransactionCase):
         response.headers = {}
         post_request.return_value = response
 
-        with self.assertRaises(Exception):
+        # Odoo's assertRaises helper isolates the body in a savepoint and rolls
+        # it back after the expected exception. Catch explicitly here because
+        # the behavior under test is the account state persisted before the
+        # provider raises the user-facing error.
+        try:
             self.account._get_social_provider().publish(self.account, self.post)
+        except UserError:
+            pass
+        else:
+            self.fail("Expected LinkedIn 403 to raise UserError")
 
         self.assertEqual(self.account.connection_state, "error")
         self.assertIn("403", self.account.last_error)
