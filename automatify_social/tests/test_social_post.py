@@ -150,6 +150,33 @@ class TestSocialPost(TransactionCase):
         with self.assertRaises(UserError):
             post.action_publish_now()
 
+    def test_retry_recovers_remote_success_without_republishing(self):
+        post = self._make_post()
+        target = post.target_ids
+        target.write(
+            {
+                "state": "failed",
+                "external_post_id": "remote-123",
+                "external_url": "https://example.test/status/remote-123",
+                "error_message": "Local bookkeeping failed after remote publish",
+            }
+        )
+        post.write(
+            {
+                "state": "failed",
+                "failure_reason": "One or more channels failed to publish.",
+            }
+        )
+
+        post.action_retry_failed()
+
+        self.assertEqual(post.state, "published")
+        self.assertEqual(target.state, "published")
+        self.assertEqual(target.external_post_id, "remote-123")
+        self.assertEqual(target.external_url, "https://example.test/status/remote-123")
+        self.assertTrue(target.published_at)
+        self.assertFalse(target.error_message)
+
     def test_display_name_uses_message_excerpt(self):
         post = self._make_post()
         self.assertTrue(post.name.startswith("Hello from Social Publisher"))
