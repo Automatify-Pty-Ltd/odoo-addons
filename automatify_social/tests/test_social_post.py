@@ -39,6 +39,17 @@ class TestSocialPost(TransactionCase):
             }
         )
 
+    def test_access_groups_use_odoo19_privilege(self):
+        privilege = self.env.ref("automatify_social.privilege_automatify_social_marketing")
+        user_group = self.env.ref("automatify_social.group_automatify_social_user")
+        manager_group = self.env.ref("automatify_social.group_automatify_social_manager")
+
+        self.assertEqual(privilege.name, "Social Marketing")
+        self.assertEqual(privilege.category_id, self.env.ref("base.module_category_marketing"))
+        self.assertEqual(user_group.privilege_id, privilege)
+        self.assertEqual(manager_group.privilege_id, privilege)
+        self.assertIn(user_group, manager_group.implied_ids)
+
     def test_schedule_requires_future_datetime(self):
         post = self._make_post()
         with self.assertRaises(UserError):
