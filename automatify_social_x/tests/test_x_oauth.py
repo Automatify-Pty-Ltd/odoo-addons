@@ -12,10 +12,16 @@ class TestXOAuth(TransactionCase):
             {"name": "X Test Account", "platform": "x"}
         )
 
-    def test_scopes_include_write_and_refresh(self):
+    def test_scopes_include_write_media_and_refresh(self):
         self.assertEqual(
             self.account._x_oauth_scopes(),
-            ["tweet.read", "tweet.write", "users.read", "offline.access"],
+            [
+                "tweet.read",
+                "tweet.write",
+                "users.read",
+                "media.write",
+                "offline.access",
+            ],
         )
 
     def test_redirect_uri_uses_odoo_base_url(self):
