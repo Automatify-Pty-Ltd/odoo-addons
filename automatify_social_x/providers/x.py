@@ -1,7 +1,6 @@
-from datetime import datetime, timezone
-
 import requests
 
+from odoo import fields
 from odoo.exceptions import UserError
 
 from odoo.addons.automatify_social.providers.base import ProviderPublishResult, SocialProvider
@@ -149,5 +148,5 @@ class XProvider(SocialProvider):
         return ProviderPublishResult(
             external_post_id=post_id,
             external_url=external_url,
-            published_at=datetime.now(timezone.utc),
+            published_at=fields.Datetime.now(),
         )
