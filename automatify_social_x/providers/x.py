@@ -12,6 +12,7 @@ class XProvider(SocialProvider):
     label = "X"
     endpoint = "https://api.x.com/2/tweets"
     media_endpoint = "https://api.x.com/2/media/upload"
+    media_chunk_size = 4 * 1024 * 1024
     timeout = 20
 
     @staticmethod
@@ -60,28 +61,30 @@ class XProvider(SocialProvider):
         if not media_id:
             raise UserError("X media initialization did not return a media id.")
 
-        try:
-            appended = requests.post(
-                f"{self.media_endpoint}/{media_id}/append",
-                headers=self._auth_headers(token),
-                data={"segment_index": "0"},
-                files={
-                    "media": (
-                        attachment.name or "social-image",
-                        raw,
-                        attachment.mimetype,
-                    )
-                },
-                timeout=self.timeout,
-            )
-        except requests.RequestException as exc:
-            raise UserError(f"X media upload failed: {exc}") from exc
+        for segment_index, offset in enumerate(range(0, len(raw), self.media_chunk_size)):
+            chunk = raw[offset : offset + self.media_chunk_size]
+            try:
+                appended = requests.post(
+                    f"{self.media_endpoint}/{media_id}/append",
+                    headers=self._auth_headers(token),
+                    data={"segment_index": str(segment_index)},
+                    files={
+                        "media": (
+                            attachment.name or "social-image",
+                            chunk,
+                            attachment.mimetype,
+                        )
+                    },
+                    timeout=self.timeout,
+                )
+            except requests.RequestException as exc:
+                raise UserError(f"X media upload failed: {exc}") from exc
 
-        if not 200 <= appended.status_code < 300:
-            raise UserError(
-                f"X rejected media upload ({appended.status_code}): "
-                f"{self._response_detail(appended)}"
-            )
+            if not 200 <= appended.status_code < 300:
+                raise UserError(
+                    f"X rejected media upload ({appended.status_code}): "
+                    f"{self._response_detail(appended)}"
+                )
 
         try:
             finalized = requests.post(
