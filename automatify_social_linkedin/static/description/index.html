@@ -4,7 +4,8 @@
         <h3 class="oe_slogan">LinkedIn publishing for Social Publisher on Odoo 19 Community</h3>
         <p class="oe_mt32 text-center">
             Connect a LinkedIn Developer App, authorize a personal profile or Company Page,
-            and publish text posts through LinkedIn's official API from the Social Publisher workflow.
+            compose in Odoo, and publish provider-safe text with an optional image through
+            LinkedIn's official APIs.
         </p>
     </div>
 </section>
@@ -16,7 +17,9 @@
             <li>Three-legged LinkedIn OAuth Authorization Code flow.</li>
             <li>Personal Profile and Company Page author modes.</li>
             <li>Company Page eligibility validation through LinkedIn organization access APIs.</li>
-            <li>Text post publishing through the versioned LinkedIn Posts API.</li>
+            <li>Provider-safe text publishing through the versioned LinkedIn Posts API.</li>
+            <li>Single-image JPG, PNG, or GIF publishing through LinkedIn Images + Posts APIs.</li>
+            <li>External post ID and convenient LinkedIn link stored on the publication target.</li>
             <li>Integration with core scheduling, retries, and per-channel publication status.</li>
             <li>One-time, expiring OAuth state bound to the initiating Odoo user and account.</li>
             <li>Actionable account health on expired or rejected authorization.</li>
@@ -35,7 +38,9 @@
         </p>
         <p>
             Client credentials and OAuth tokens are not bundled with this addon. The connector
-            communicates directly with LinkedIn's official OAuth and API endpoints.
+            communicates directly with LinkedIn's official OAuth, Images, and Posts API endpoints.
+            Post text and selected image bytes are sent to LinkedIn only when publishing or when a
+            scheduled post becomes due.
         </p>
         <p><strong>License:</strong> LGPL-3</p>
         <p><strong>Support:</strong> admin@automatify.com.au</p>
