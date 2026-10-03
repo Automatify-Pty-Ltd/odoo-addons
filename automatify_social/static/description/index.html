@@ -3,8 +3,8 @@
         <h2 class="oe_slogan">Social Publisher</h2>
         <h3 class="oe_slogan">Open social publishing workflow for Odoo 19 Community</h3>
         <p class="oe_mt32 text-center">
-            Manage social accounts and posts in Odoo with native scheduling, per-channel targets,
-            retries, multi-company isolation, and provider-neutral connector hooks.
+            Compose social posts in Odoo with a native rich editor, attach an image, schedule or
+            publish, track per-channel results, and extend the workflow with provider connectors.
         </p>
     </div>
 </section>
@@ -13,15 +13,31 @@
     <div class="oe_row oe_spaced">
         <h3>Core features</h3>
         <ul>
-            <li>Social Accounts and Social Posts with Odoo-native forms and lists.</li>
+            <li>Rich Odoo post authoring with provider-safe outbound text rendering.</li>
+            <li>One image attachment directly from the Social Post form.</li>
+            <li>Social Accounts and Social Posts with Odoo-native forms, lists, calendar, and chatter.</li>
             <li>Draft, scheduled, processing, published, failed, and cancelled states.</li>
-            <li>Publish now, schedule, retry failed channels, cancel, and reset to draft.</li>
+            <li>Publish now, future scheduling, retry failed channels, cancel, and reset to draft.</li>
+            <li>Distinct Scheduled At and Published At semantics.</li>
+            <li>Per-channel external post ID, network link, publication status, and error detail.</li>
             <li>Five-minute scheduled publishing cron with bounded batches.</li>
             <li>Per-account publication targets for multi-channel fan-out.</li>
             <li>Company-aware record rules and cross-company target validation.</li>
             <li>Odoo-native extension hooks so installed connector addons can add networks without changing the core.</li>
             <li>Per-post publication serialization to reduce duplicate writes from concurrent manual and scheduled attempts.</li>
         </ul>
+    </div>
+</section>
+
+<section class="oe_container">
+    <div class="oe_row oe_spaced">
+        <h3>Open-source boundary</h3>
+        <p>
+            Baseline authoring and publishing UX is intentionally part of the open-source addon:
+            rich authoring, image attachment, scheduling, retries, external links, and provider
+            extension hooks. Advanced workflow, analytics, AI, governance, and campaign-scale
+            features can be delivered separately without making this core a demo-only product.
+        </p>
     </div>
 </section>
 
