@@ -43,6 +43,7 @@ class TestXProvider(TransactionCase):
 
         self.assertEqual(result.external_post_id, "12345")
         self.assertEqual(result.external_url, "https://x.com/example/status/12345")
+        self.assertIsNone(result.published_at.tzinfo)
         _, kwargs = post_request.call_args
         self.assertEqual(kwargs["json"], {"text": "Hello from Odoo"})
         self.assertEqual(kwargs["headers"]["Authorization"], "Bearer token")
@@ -81,6 +82,7 @@ class TestXProvider(TransactionCase):
             result = self.account._get_social_provider().publish(self.account, self.post)
 
         self.assertEqual(result.external_post_id, "12347")
+        self.assertIsNone(result.published_at.tzinfo)
         self.assertEqual(post_request.call_count, 4)
         initialize_call, append_call, finalize_call, publish_call = post_request.call_args_list
         self.assertEqual(
