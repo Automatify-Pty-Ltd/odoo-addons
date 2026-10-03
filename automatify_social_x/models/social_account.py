@@ -49,7 +49,13 @@ class AutomatifySocialAccount(models.Model):
         return f"{base_url.rstrip('/')}/automatify-social/x/oauth/callback"
 
     def _x_oauth_scopes(self):
-        return ["tweet.read", "tweet.write", "users.read", "offline.access"]
+        return [
+            "tweet.read",
+            "tweet.write",
+            "users.read",
+            "media.write",
+            "offline.access",
+        ]
 
     def action_x_connect(self):
         self.ensure_one()
