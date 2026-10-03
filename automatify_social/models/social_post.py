@@ -197,7 +197,21 @@ class AutomatifySocialPost(models.Model):
             failed = post.target_ids.filtered(lambda target: target.state == "failed")
             if not failed:
                 raise UserError(_("There are no failed channels to retry."))
-            failed.write({"state": "pending", "error_message": False})
+
+            recovered = failed.filtered(
+                lambda target: target.external_post_id or target.external_url
+            )
+            for target in recovered:
+                target.write(
+                    {
+                        "state": "published",
+                        "published_at": target.published_at or fields.Datetime.now(),
+                        "error_message": False,
+                    }
+                )
+
+            retryable = failed - recovered
+            retryable.write({"state": "pending", "error_message": False})
             post.action_publish_now()
         return True
 
