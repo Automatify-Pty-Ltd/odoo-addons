@@ -1,3 +1,4 @@
+import base64
 from unittest.mock import Mock, patch
 
 from odoo.exceptions import UserError
@@ -35,6 +36,35 @@ class TestXProvider(TransactionCase):
         _, kwargs = post_request.call_args
         self.assertEqual(kwargs["json"], {"text": "Hello from Odoo"})
         self.assertEqual(kwargs["headers"]["Authorization"], "Bearer token")
+
+    @patch("odoo.addons.automatify_social_x.providers.x.requests.post")
+    def test_publish_uses_provider_safe_rich_text_rendering(self, post_request):
+        self.post.message = "<p>Hello <strong>Odoo</strong></p>"
+        response = Mock(status_code=201, text="")
+        response.json.return_value = {"data": {"id": "12346"}}
+        post_request.return_value = response
+
+        with patch.object(
+            type(self.account), "_x_get_access_token", return_value="token"
+        ):
+            self.account._get_social_provider().publish(self.account, self.post)
+
+        _, kwargs = post_request.call_args
+        self.assertEqual(kwargs["json"], {"text": "Hello *Odoo*"})
+
+    def test_image_post_fails_before_external_write_until_x_media_is_enabled(self):
+        image = self.env["ir.attachment"].create(
+            {
+                "name": "launch.png",
+                "type": "binary",
+                "mimetype": "image/png",
+                "datas": base64.b64encode(b"fake-image-bytes"),
+            }
+        )
+        self.post.image_ids = image
+
+        with self.assertRaisesRegex(UserError, "X image publishing is not enabled"):
+            self.account._get_social_provider().publish(self.account, self.post)
 
     @patch("odoo.addons.automatify_social_x.providers.x.requests.post")
     def test_publish_auth_rejection_marks_account_error(self, post_request):
