@@ -2,6 +2,7 @@ import logging
 
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError, ValidationError
+from odoo.tools import html2plaintext, is_html_empty
 
 _logger = logging.getLogger(__name__)
 
@@ -13,7 +14,27 @@ class AutomatifySocialPost(models.Model):
     _order = "scheduled_at desc, id desc"
 
     name = fields.Char(compute="_compute_name")
-    message = fields.Text(required=True, tracking=True)
+    message = fields.Html(
+        string="Post Content",
+        required=True,
+        tracking=True,
+        sanitize=True,
+        help="Rich authoring content. Connectors publish a provider-safe text rendering.",
+    )
+    message_text = fields.Text(
+        string="Outbound Text",
+        compute="_compute_message_text",
+        help="Plain-text representation sent to social-network APIs.",
+    )
+    image_ids = fields.Many2many(
+        "ir.attachment",
+        "automatify_social_post_image_rel",
+        "post_id",
+        "attachment_id",
+        string="Image",
+        copy=False,
+        help="Optional image attached to this social post. Stage 1.1 supports one image per post.",
+    )
     state = fields.Selection(
         selection=[
             ("draft", "Draft"),
@@ -46,10 +67,33 @@ class AutomatifySocialPost(models.Model):
     failure_reason = fields.Text(readonly=True)
 
     @api.depends("message")
+    def _compute_message_text(self):
+        for post in self:
+            post.message_text = html2plaintext(post.message or "", include_references=True)
+
+    @api.depends("message")
     def _compute_name(self):
         for post in self:
-            text = " ".join((post.message or "").split())
+            text = html2plaintext(post.message or "", include_references=False)
+            text = " ".join(text.split())
             post.name = text[:80] or _("Social Post")
+
+    @api.constrains("message")
+    def _check_message_content(self):
+        for post in self:
+            if is_html_empty(post.message):
+                raise ValidationError(_("Post content cannot be empty."))
+
+    @api.constrains("image_ids")
+    def _check_images(self):
+        for post in self:
+            if len(post.image_ids) > 1:
+                raise ValidationError(_("Stage 1.1 currently supports one image per social post."))
+            invalid = post.image_ids.filtered(
+                lambda attachment: not (attachment.mimetype or "").startswith("image/")
+            )
+            if invalid:
+                raise ValidationError(_("Only image attachments can be added to a social post."))
 
     @api.constrains("target_ids", "company_id")
     def _check_target_companies(self):
@@ -99,7 +143,10 @@ class AutomatifySocialPost(models.Model):
                 lambda target: target.state == "failed"
             ):
                 raise UserError(_("Use Retry Failed to retry failed channels."))
-            post.write({"state": "processing", "failure_reason": False})
+            values = {"state": "processing", "failure_reason": False}
+            if state == "draft":
+                values["scheduled_at"] = False
+            post.write(values)
             post._publish_pending_targets()
         return True
 
@@ -119,7 +166,7 @@ class AutomatifySocialPost(models.Model):
                             "error_message": False,
                         }
                     )
-                except Exception as exc:  # provider boundary: persist actionable failure
+                except Exception as exc:
                     _logger.exception(
                         "Social publish failed for post %s target %s",
                         post.id,
