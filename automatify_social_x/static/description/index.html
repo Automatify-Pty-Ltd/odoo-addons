@@ -3,8 +3,8 @@
         <h2 class="oe_slogan">Social Publisher X</h2>
         <h3 class="oe_slogan">X publishing for Social Publisher on Odoo 19 Community</h3>
         <p class="oe_mt32 text-center">
-            Connect an X Developer App with OAuth 2.0 PKCE and publish text posts from the
-            Social Publisher scheduling and retry workflow.
+            Connect an X Developer App with OAuth 2.0 PKCE, compose in Odoo, and publish
+            provider-safe text with an optional image from the Social Publisher workflow.
         </p>
     </div>
 </section>
@@ -14,12 +14,14 @@
         <h3>Features</h3>
         <ul>
             <li>OAuth 2.0 Authorization Code flow with PKCE S256.</li>
+            <li>Requests posting, media-upload, identity, and offline-refresh scopes.</li>
             <li>Account identity resolution through the official X API.</li>
-            <li>Text post publishing through X API v2.</li>
+            <li>Provider-safe text publishing through X API v2.</li>
+            <li>Single-image JPG, PNG, or WebP publishing through X API v2 chunked media upload.</li>
             <li>Refresh-token support for scheduled publishing.</li>
+            <li>External X post link stored on the publication target.</li>
             <li>Integration with core scheduling, retries, and per-channel publication status.</li>
             <li>One-time, expiring OAuth state bound to the initiating Odoo user and account.</li>
-            <li>Actionable account health for rejected authorization.</li>
         </ul>
     </div>
 </section>
@@ -30,11 +32,14 @@
         <p>
             Requires <strong>Social Publisher</strong> and an X Developer App owned or authorized
             by the installing organization. X controls API access, billing or usage credits,
-            limits, pricing, and availability.
+            limits, pricing, and availability. Existing connections created without
+            <code>media.write</code> must reconnect before image publishing.
         </p>
         <p>
             Client credentials and OAuth tokens are not bundled with this addon. The connector
-            communicates directly with X's official OAuth and API endpoints.
+            communicates directly with X's official OAuth, media-upload, and Posts API endpoints.
+            Post text and selected image bytes are sent to X only when publishing or when a
+            scheduled post becomes due.
         </p>
         <p><strong>License:</strong> LGPL-3</p>
         <p><strong>Support:</strong> admin@automatify.com.au</p>
