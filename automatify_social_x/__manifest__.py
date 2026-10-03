@@ -1,6 +1,6 @@
 {
     "name": "Social Publisher X",
-    "version": "19.0.1.1.0",
+    "version": "19.0.1.2.0",
     "summary": "X connector for Social Publisher",
     "author": "Automatify Pty Ltd",
     "website": "https://automatify.com.au",
