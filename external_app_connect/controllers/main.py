@@ -133,6 +133,7 @@ class ExternalAppConnectController(http.Controller):
                     {"error": "access_denied", "state": state},
                 ),
                 code=303,
+                local=False,
             )
 
         _record, raw_code = request.env[
@@ -147,6 +148,7 @@ class ExternalAppConnectController(http.Controller):
         return request.redirect(
             _redirect_with_params(redirect_uri, {"code": raw_code, "state": state}),
             code=303,
+            local=False,
         )
 
     @http.route(
