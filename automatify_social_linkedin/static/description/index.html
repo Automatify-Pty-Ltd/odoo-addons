@@ -29,6 +29,25 @@
 
 <section class="oe_container">
     <div class="oe_row oe_spaced">
+        <h3>Setup</h3>
+        <ol>
+            <li>Create or use your own LinkedIn Developer App.</li>
+            <li>Open <strong>Social Marketing &rarr; Configuration &rarr; LinkedIn Settings</strong>.</li>
+            <li>Enter your own LinkedIn Client ID and Client Secret.</li>
+            <li>Copy the OAuth Redirect URL displayed by Odoo into the exact Redirect URLs for your LinkedIn app.</li>
+            <li>Create a LinkedIn Social Account in Odoo and choose <strong>Connect LinkedIn</strong>.</li>
+        </ol>
+        <p>
+            The OAuth Redirect URL is generated from your installation's standard Odoo
+            <code>web.base.url</code>. Make sure that value is your public HTTPS Odoo address before
+            configuring the LinkedIn Developer App. No Automatify production callback URL or
+            provider credential is bundled with this addon.
+        </p>
+    </div>
+</section>
+
+<section class="oe_container">
+    <div class="oe_row oe_spaced">
         <h3>Requirements and external service</h3>
         <p>
             Requires <strong>Social Publisher</strong> and a LinkedIn Developer App owned or
