@@ -28,6 +28,26 @@
 
 <section class="oe_container">
     <div class="oe_row oe_spaced">
+        <h3>Setup</h3>
+        <ol>
+            <li>Create or use your own X Developer App.</li>
+            <li>Enable <strong>Read and write</strong> user authentication for the app.</li>
+            <li>Open <strong>Social Marketing &rarr; Configuration &rarr; X Settings</strong>.</li>
+            <li>Enter your own X Client ID and Client Secret when your app type uses one.</li>
+            <li>Copy the OAuth Redirect URL displayed by Odoo into the exact Callback / Redirect URLs for your X app.</li>
+            <li>Create an X Social Account in Odoo and choose <strong>Connect X</strong>.</li>
+        </ol>
+        <p>
+            The OAuth Redirect URL is generated from your installation's standard Odoo
+            <code>web.base.url</code>. Make sure that value is your public HTTPS Odoo address before
+            configuring the X Developer App. No Automatify production callback URL or provider
+            credential is bundled with this addon.
+        </p>
+    </div>
+</section>
+
+<section class="oe_container">
+    <div class="oe_row oe_spaced">
         <h3>Requirements and external service</h3>
         <p>
             Requires <strong>Social Publisher</strong> and an X Developer App owned or authorized
