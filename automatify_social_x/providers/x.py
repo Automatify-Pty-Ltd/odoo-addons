@@ -14,6 +14,12 @@ class XProvider(SocialProvider):
     timeout = 20
 
     def publish(self, account, post):
+        if post.image_ids:
+            raise UserError(
+                "X image publishing is not enabled in this Stage 1.1 slice yet. "
+                "Remove the image or publish through a connector with image support."
+            )
+
         token = account._x_get_access_token()
         try:
             response = requests.post(
@@ -22,7 +28,7 @@ class XProvider(SocialProvider):
                     "Authorization": f"Bearer {token}",
                     "Content-Type": "application/json",
                 },
-                json={"text": post.message},
+                json={"text": post.message_text},
                 timeout=self.timeout,
             )
         except requests.RequestException as exc:
