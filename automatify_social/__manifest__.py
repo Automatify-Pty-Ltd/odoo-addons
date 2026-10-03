@@ -1,6 +1,6 @@
 {
     "name": "Social Publisher",
-    "version": "19.0.1.0.1",
+    "version": "19.0.1.1.0",
     "summary": "Open social publishing core for Odoo Community",
     "author": "Automatify Pty Ltd",
     "website": "https://automatify.com.au",
