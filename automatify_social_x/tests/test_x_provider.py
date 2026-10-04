@@ -1,8 +1,12 @@
 import base64
 from unittest.mock import Mock, patch
 
+import requests
+
 from odoo.exceptions import UserError
 from odoo.tests.common import TransactionCase
+
+from odoo.addons.automatify_social.providers.base import AmbiguousPublishError
 
 
 class TestXProvider(TransactionCase):
@@ -117,6 +121,16 @@ class TestXProvider(TransactionCase):
                 "media": {"media_ids": ["media-123"]},
             },
         )
+
+    @patch("odoo.addons.automatify_social_x.providers.x.requests.post")
+    def test_publish_timeout_is_ambiguous_and_not_plain_failure(self, post_request):
+        post_request.side_effect = requests.Timeout("response lost")
+
+        with patch.object(
+            type(self.account), "_x_get_access_token", return_value="token"
+        ):
+            with self.assertRaises(AmbiguousPublishError):
+                self.account._get_social_provider().publish(self.account, self.post)
 
     @patch("odoo.addons.automatify_social_x.providers.x.requests.post")
     def test_publish_auth_rejection_marks_account_error(self, post_request):
