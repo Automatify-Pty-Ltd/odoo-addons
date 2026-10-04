@@ -75,38 +75,71 @@ class AutomatifySocialLinkedInOAuthController(http.Controller):
         return f"urn:li:person:{member_id}", name or None
 
     def _resolve_organization(self, account, token):
-        response = requests.get(
-            self.organization_acl_endpoint,
-            headers={
-                "Authorization": f"Bearer {token}",
-                "X-Restli-Protocol-Version": "2.0.0",
-                "Linkedin-Version": account.linkedin_api_version or "202609",
-            },
-            params={"q": "roleAssignee", "state": "APPROVED"},
-            timeout=self.timeout,
-        )
-        if response.status_code != 200:
-            raise ValueError(
-                f"LinkedIn organization lookup failed ({response.status_code}): "
-                f"{self._response_detail(response)}"
-            )
-
+        headers = {
+            "Authorization": f"Bearer {token}",
+            "X-Restli-Protocol-Version": "2.0.0",
+            "Linkedin-Version": account.linkedin_api_version or "202609",
+        }
+        params = {"q": "roleAssignee", "state": "APPROVED"}
         eligible_roles = {
             "ADMINISTRATOR",
             "DIRECT_SPONSORED_CONTENT_POSTER",
             "CONTENT_ADMIN",
             "CONTENT_ADMINISTRATOR",
         }
-        organization_urns = sorted(
-            {
+        organization_urns = set()
+
+        while True:
+            current_start = int(params.get("start", 0))
+            response = requests.get(
+                self.organization_acl_endpoint,
+                headers=headers,
+                params=params,
+                timeout=self.timeout,
+            )
+            if response.status_code != 200:
+                raise ValueError(
+                    f"LinkedIn organization lookup failed ({response.status_code}): "
+                    f"{self._response_detail(response)}"
+                )
+
+            payload = response.json()
+            organization_urns.update(
                 element.get("organization") or element.get("organizationTarget")
-                for element in response.json().get("elements", [])
+                for element in payload.get("elements", [])
                 if element.get("state") == "APPROVED"
                 and element.get("role") in eligible_roles
                 and (element.get("organization") or element.get("organizationTarget"))
-            }
-        )
+            )
 
+            paging = payload.get("paging") or {}
+            links = paging.get("links") or []
+            has_next = any(
+                isinstance(link, dict) and link.get("rel") == "next" for link in links
+            )
+            if not has_next:
+                break
+
+            try:
+                page_start = int(paging.get("start") or 0)
+                page_count = int(paging.get("count") or 0)
+            except (TypeError, ValueError) as exc:
+                raise ValueError(
+                    "LinkedIn organization lookup returned invalid paging metadata."
+                ) from exc
+            next_start = page_start + page_count
+            if page_count <= 0 or next_start <= current_start:
+                raise ValueError(
+                    "LinkedIn organization lookup returned invalid paging metadata."
+                )
+            params = {
+                "q": "roleAssignee",
+                "state": "APPROVED",
+                "start": next_start,
+                "count": page_count,
+            }
+
+        organization_urns = sorted(organization_urns)
         configured = account.linkedin_author_urn
         if configured:
             if configured not in organization_urns:
