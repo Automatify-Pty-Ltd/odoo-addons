@@ -6,7 +6,10 @@ from odoo import fields
 from odoo.exceptions import UserError, ValidationError
 from odoo.tests.common import TransactionCase, new_test_user
 
-from odoo.addons.automatify_social.providers.base import ProviderPublishResult
+from odoo.addons.automatify_social.providers.base import (
+    AmbiguousPublishError,
+    ProviderPublishResult,
+)
 
 
 class TestSocialPost(TransactionCase):
@@ -102,6 +105,21 @@ class TestSocialPost(TransactionCase):
         post.action_schedule()
         self.assertEqual(post.state, "scheduled")
 
+    def test_schedule_rechecks_locked_state_before_targets(self):
+        post = self._make_post()
+        post.scheduled_at = fields.Datetime.now() + timedelta(hours=1)
+        post.flush_recordset(["state"])
+        self.env.cr.execute(
+            "UPDATE automatify_social_post SET state = %s WHERE id = %s",
+            ["processing", post.id],
+        )
+
+        with self.assertRaises(UserError):
+            post.action_schedule()
+
+        self.assertEqual(post.state, "processing")
+        self.assertEqual(post.target_ids.state, "pending")
+
     def test_post_now_from_draft_clears_incidental_scheduled_at(self):
         post = self._make_post()
         post.scheduled_at = fields.Datetime.now() + timedelta(hours=1)
@@ -114,6 +132,29 @@ class TestSocialPost(TransactionCase):
         self.assertEqual(post.state, "failed")
         self.assertEqual(post.target_ids.state, "failed")
         self.assertIn("No social provider connector", post.target_ids.error_message)
+
+    def test_ambiguous_publish_outcome_is_not_retryable(self):
+        post = self._make_post()
+        provider = Mock()
+        provider.publish.side_effect = AmbiguousPublishError(
+            "Provider response was lost after the publish request."
+        )
+
+        with patch.object(
+            type(self.account), "_get_social_provider", return_value=provider
+        ):
+            post.action_publish_now()
+
+        self.assertEqual(post.state, "failed")
+        self.assertEqual(post.target_ids.state, "unknown")
+        self.assertIn("unknown publication outcome", post.failure_reason.lower())
+        with self.assertRaises(UserError):
+            post.action_retry_failed()
+        with self.assertRaises(UserError):
+            post.action_publish_now()
+        with self.assertRaises(UserError):
+            post.action_reset_to_draft()
+        self.assertEqual(provider.publish.call_count, 1)
 
     def test_social_user_publish_elevates_only_provider_account(self):
         social_user = new_test_user(
