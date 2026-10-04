@@ -3,7 +3,11 @@ import requests
 from odoo import fields
 from odoo.exceptions import UserError
 
-from odoo.addons.automatify_social.providers.base import ProviderPublishResult, SocialProvider
+from odoo.addons.automatify_social.providers.base import (
+    AmbiguousPublishError,
+    ProviderPublishResult,
+    SocialProvider,
+)
 
 
 class XProvider(SocialProvider):
@@ -121,7 +125,10 @@ class XProvider(SocialProvider):
                 timeout=self.timeout,
             )
         except requests.RequestException as exc:
-            raise UserError(f"X request failed: {exc}") from exc
+            raise AmbiguousPublishError(
+                "X publication outcome is unknown because the response was lost. "
+                "Verify the post on X before attempting any retry."
+            ) from exc
 
         if response.status_code != 201:
             detail = self._response_detail(response)
@@ -138,7 +145,10 @@ class XProvider(SocialProvider):
         payload = response.json().get("data") or {}
         post_id = payload.get("id")
         if not post_id:
-            raise UserError("X created the post but did not return a post id.")
+            raise AmbiguousPublishError(
+                "X accepted the publication request but did not return a post id. "
+                "Verify the post on X before attempting any retry."
+            )
         username = (account.handle or "").lstrip("@")
         external_url = (
             f"https://x.com/{username}/status/{post_id}"
