@@ -1,7 +1,7 @@
 import logging
 
 from odoo import _, api, fields, models
-from odoo.exceptions import UserError, ValidationError
+from odoo.exceptions import AccessError, UserError, ValidationError
 from odoo.tools import html2plaintext, is_html_empty
 
 from odoo.addons.automatify_social.providers.base import AmbiguousPublishError
@@ -136,7 +136,7 @@ class AutomatifySocialPost(models.Model):
         state = self._lock_for_publish()
         if state != "draft":
             raise UserError(_("Only draft posts can be scheduled."))
-        self.target_ids.write({"state": "pending", "error_message": False})
+        self.target_ids.sudo().write({"state": "pending", "error_message": False})
         self.write({"state": "scheduled", "failure_reason": False})
         return True
 
@@ -175,7 +175,7 @@ class AutomatifySocialPost(models.Model):
                     # Elevate only the internal provider record so connector code can use
                     # manager-restricted OAuth token fields without exposing them to publishers.
                     result = provider.publish(account.sudo(), post)
-                    target.write(
+                    target.sudo().write(
                         {
                             "state": "published",
                             "external_post_id": result.external_post_id or False,
@@ -191,14 +191,18 @@ class AutomatifySocialPost(models.Model):
                         target.id,
                         exc,
                     )
-                    target.write({"state": "unknown", "error_message": str(exc)})
+                    target.sudo().write(
+                        {"state": "unknown", "error_message": str(exc)}
+                    )
                 except Exception as exc:
                     _logger.exception(
                         "Social publish failed for post %s target %s",
                         post.id,
                         target.id,
                     )
-                    target.write({"state": "failed", "error_message": str(exc)})
+                    target.sudo().write(
+                        {"state": "failed", "error_message": str(exc)}
+                    )
 
             unknown = post._unknown_targets()
             failed = post.target_ids.filtered(lambda target: target.state == "failed")
@@ -246,7 +250,7 @@ class AutomatifySocialPost(models.Model):
                 lambda target: target.external_post_id or target.external_url
             )
             for target in recovered:
-                target.write(
+                target.sudo().write(
                     {
                         "state": "published",
                         "published_at": target.published_at or fields.Datetime.now(),
@@ -255,13 +259,14 @@ class AutomatifySocialPost(models.Model):
                 )
 
             retryable = failed - recovered
-            retryable.write({"state": "pending", "error_message": False})
+            retryable.sudo().write({"state": "pending", "error_message": False})
             post.action_publish_now()
         return True
 
     def action_cancel(self):
         for post in self:
-            if post.state in ("processing", "published"):
+            state = post._lock_for_publish()
+            if state in ("processing", "published"):
                 raise UserError(_("Processing or published posts cannot be cancelled."))
             post.write({"state": "cancelled"})
         return True
@@ -285,7 +290,7 @@ class AutomatifySocialPost(models.Model):
                         "Use Retry Failed for the remaining channels."
                     )
                 )
-            post.target_ids.write({"state": "pending", "error_message": False})
+            post.target_ids.sudo().write({"state": "pending", "error_message": False})
             post.write(
                 {
                     "state": "draft",
@@ -318,6 +323,10 @@ class AutomatifySocialPostTarget(models.Model):
     _name = "automatify.social.post.target"
     _description = "Social Post Target"
     _order = "id"
+
+    _WORKFLOW_MANAGED_FIELDS = frozenset(
+        {"state", "external_post_id", "external_url", "published_at", "error_message"}
+    )
 
     post_id = fields.Many2one(
         "automatify.social.post",
@@ -356,6 +365,29 @@ class AutomatifySocialPostTarget(models.Model):
         "unique(post_id, account_id)",
         "The same social account can only be added once to a post.",
     )
+
+    def _ensure_workflow_fields_allowed(self, vals, creating=False):
+        if self.env.su or self.env.user.has_group(
+            "automatify_social.group_automatify_social_manager"
+        ):
+            return
+        protected = self._WORKFLOW_MANAGED_FIELDS
+        if not creating:
+            protected = protected | {"post_id"}
+        if protected.intersection(vals):
+            raise AccessError(
+                _("Publication status and remote-result fields are managed by Social Publisher.")
+            )
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        for vals in vals_list:
+            self._ensure_workflow_fields_allowed(vals, creating=True)
+        return super().create(vals_list)
+
+    def write(self, vals):
+        self._ensure_workflow_fields_allowed(vals)
+        return super().write(vals)
 
     @api.constrains("post_id", "account_id")
     def _check_company_match(self):
