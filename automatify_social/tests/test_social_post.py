@@ -275,6 +275,29 @@ class TestSocialPost(TransactionCase):
         with self.assertRaises(UserError):
             post.action_publish_now()
 
+    def test_retry_rechecks_target_state_after_parent_lock(self):
+        post = self._make_post()
+        target = post.target_ids
+        target.sudo().write({"state": "failed", "error_message": "provider failure"})
+        post.sudo().write(
+            {
+                "state": "failed",
+                "failure_reason": "One or more channels failed to publish.",
+            }
+        )
+        self.assertEqual(target.state, "failed")
+        target.flush_recordset(["state"])
+        self.env.cr.execute(
+            "UPDATE automatify_social_post_target SET state = %s WHERE id = %s",
+            ["unknown", target.id],
+        )
+
+        with self.assertRaises(UserError):
+            post.action_retry_failed()
+
+        target.invalidate_recordset(["state"])
+        self.assertEqual(target.state, "unknown")
+
     def test_retry_recovers_remote_success_without_republishing(self):
         post = self._make_post()
         target = post.target_ids
