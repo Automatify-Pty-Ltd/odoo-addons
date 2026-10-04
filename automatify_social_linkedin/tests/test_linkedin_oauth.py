@@ -21,6 +21,7 @@ class TestLinkedInOAuth(TransactionCase):
         self.regular_user = new_test_user(
             self.env,
             login="linkedin-settings-user",
+            email="linkedin-settings-user@example.com",
             groups="base.group_user",
         )
 

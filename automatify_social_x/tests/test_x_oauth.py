@@ -15,6 +15,7 @@ class TestXOAuth(TransactionCase):
         self.regular_user = new_test_user(
             self.env,
             login="x-settings-user",
+            email="x-settings-user@example.com",
             groups="base.group_user",
         )
 
