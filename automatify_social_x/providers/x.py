@@ -130,6 +130,12 @@ class XProvider(SocialProvider):
                 "Verify the post on X before attempting any retry."
             ) from exc
 
+        if response.status_code >= 500:
+            raise AmbiguousPublishError(
+                "X publication outcome is unknown because X returned a server error after "
+                "the publish request. Verify the post on X before attempting any retry."
+            )
+
         if response.status_code != 201:
             detail = self._response_detail(response)
             message = f"X rejected the post ({response.status_code}): {detail}"
