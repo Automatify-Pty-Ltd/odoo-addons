@@ -142,8 +142,16 @@ class XProvider(SocialProvider):
                 )
             raise UserError(message)
 
-        payload = response.json().get("data") or {}
-        post_id = payload.get("id")
+        try:
+            response_payload = response.json()
+        except (ValueError, requests.RequestException) as exc:
+            raise AmbiguousPublishError(
+                "X accepted the publication request but returned an unreadable response. "
+                "Verify the post on X before attempting any retry."
+            ) from exc
+
+        payload = response_payload.get("data") if isinstance(response_payload, dict) else None
+        post_id = payload.get("id") if isinstance(payload, dict) else None
         if not post_id:
             raise AmbiguousPublishError(
                 "X accepted the publication request but did not return a post id. "
