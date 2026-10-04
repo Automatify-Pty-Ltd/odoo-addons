@@ -145,12 +145,13 @@ class TestSocialPost(TransactionCase):
         self.assertEqual(post.state, "cancelled")
         post.action_reset_to_draft()
         self.assertEqual(post.state, "draft")
-        
+
     def test_reset_to_draft_rechecks_locked_state(self):
         post = self._make_post()
         post.scheduled_at = fields.Datetime.now() + timedelta(hours=1)
         post.action_schedule()
         self.assertEqual(post.state, "scheduled")
+        post.flush_recordset(["state"])
 
         self.env.cr.execute(
             "UPDATE automatify_social_post SET state = %s WHERE id = %s",
