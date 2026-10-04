@@ -3,6 +3,10 @@ from datetime import datetime
 from typing import Optional
 
 
+class AmbiguousPublishError(Exception):
+    """The provider may have created the remote post, so automatic retry is unsafe."""
+
+
 @dataclass(frozen=True)
 class ProviderPublishResult:
     external_post_id: Optional[str] = None
