@@ -2,7 +2,7 @@ from datetime import timedelta
 from unittest.mock import patch
 
 from odoo import fields
-from odoo.exceptions import AccessError
+from odoo.exceptions import AccessError, UserError
 from odoo.tests.common import TransactionCase, new_test_user
 
 
@@ -89,6 +89,50 @@ class TestSocialWorkflowGuards(TransactionCase):
         post.action_schedule()
 
         self.assertEqual(post.state, "scheduled")
+
+    def test_content_edit_rechecks_locked_processing_state(self):
+        post = self._make_post()
+        self.assertEqual(post.state, "draft")
+        post.flush_recordset(["state"])
+        self.env.cr.execute(
+            "UPDATE automatify_social_post SET state = %s WHERE id = %s",
+            ["processing", post.id],
+        )
+
+        with self.assertRaises(UserError):
+            post.write({"message": "Late edit that must not land"})
+
+        post.invalidate_recordset(["state", "message"])
+        self.assertEqual(post.state, "processing")
+        self.assertNotIn("Late edit", post.message)
+
+    def test_published_content_and_media_are_frozen(self):
+        post = self._make_post()
+        post.sudo().write({"state": "published", "published_at": fields.Datetime.now()})
+
+        with self.assertRaises(UserError):
+            post.write({"message": "Changed after publication"})
+        with self.assertRaises(UserError):
+            post.write({"image_ids": [(5, 0, 0)]})
+
+    def test_failed_post_with_remote_outcome_keeps_content_frozen(self):
+        post = self._make_post()
+        post.target_ids.sudo().write(
+            {
+                "state": "published",
+                "external_post_id": "remote-123",
+                "external_url": "https://example.test/status/remote-123",
+            }
+        )
+        post.sudo().write(
+            {
+                "state": "failed",
+                "failure_reason": "Another channel failed.",
+            }
+        )
+
+        with self.assertRaises(UserError):
+            post.write({"message": "Would diverge from already-published content"})
 
     def test_cross_company_user_cannot_cancel_or_reset(self):
         post = self._make_other_company_post()
