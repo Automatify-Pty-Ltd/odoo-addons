@@ -41,6 +41,19 @@ class AutomatifySocialAccount(models.Model):
     last_sync_at = fields.Datetime(readonly=True)
     last_error = fields.Text(readonly=True)
 
+    def write(self, vals):
+        if "company_id" in vals:
+            new_company_id = vals.get("company_id")
+            if any(account.company_id.id != new_company_id for account in self):
+                raise UserError(
+                    _(
+                        "A social account cannot be moved to another company. "
+                        "Create a separate social account for the other company so queued and "
+                        "historical publications remain bound to their original company."
+                    )
+                )
+        return super().write(vals)
+
     def _social_platform_selection(self):
         """Connector addons extend this selection through normal Odoo inheritance."""
         return []
