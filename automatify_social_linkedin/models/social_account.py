@@ -64,7 +64,7 @@ class AutomatifySocialAccount(models.Model):
     def _linkedin_oauth_scopes(self):
         self.ensure_one()
         if self.linkedin_author_type == "member":
-            return ["r_basicprofile", "w_member_social"]
+            return ["openid", "profile", "w_member_social"]
         return ["rw_organization_admin", "w_organization_social"]
 
     def action_linkedin_connect(self):

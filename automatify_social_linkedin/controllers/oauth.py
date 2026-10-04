@@ -8,7 +8,7 @@ from odoo.http import request
 
 class AutomatifySocialLinkedInOAuthController(http.Controller):
     token_endpoint = "https://www.linkedin.com/oauth/v2/accessToken"
-    member_endpoint = "https://api.linkedin.com/v2/me"
+    member_endpoint = "https://api.linkedin.com/v2/userinfo"
     organization_acl_endpoint = "https://api.linkedin.com/rest/organizationAcls"
     timeout = 20
 
@@ -64,15 +64,12 @@ class AutomatifySocialLinkedInOAuthController(http.Controller):
                 f"{self._response_detail(response)}"
             )
         profile = response.json()
-        member_id = profile.get("id")
+        member_id = profile.get("sub")
         if not member_id:
-            raise ValueError("LinkedIn member profile did not contain an id.")
-        name = " ".join(
+            raise ValueError("LinkedIn userinfo response did not contain sub.")
+        name = profile.get("name") or " ".join(
             part
-            for part in (
-                profile.get("localizedFirstName"),
-                profile.get("localizedLastName"),
-            )
+            for part in (profile.get("given_name"), profile.get("family_name"))
             if part
         )
         return f"urn:li:person:{member_id}", name or None

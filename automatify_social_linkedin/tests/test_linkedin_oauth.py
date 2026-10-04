@@ -1,5 +1,11 @@
+from unittest.mock import Mock, patch
+
 from odoo.exceptions import AccessError
 from odoo.tests.common import TransactionCase, new_test_user
+
+from odoo.addons.automatify_social_linkedin.controllers.oauth import (
+    AutomatifySocialLinkedInOAuthController,
+)
 
 
 class TestLinkedInOAuth(TransactionCase):
@@ -24,11 +30,30 @@ class TestLinkedInOAuth(TransactionCase):
             ["rw_organization_admin", "w_organization_social"],
         )
 
-    def test_member_scopes(self):
+    def test_member_scopes_use_oidc_and_share_permission(self):
         self.account.linkedin_author_type = "member"
         self.assertEqual(
             self.account._linkedin_oauth_scopes(),
-            ["r_basicprofile", "w_member_social"],
+            ["openid", "profile", "w_member_social"],
+        )
+
+    def test_member_identity_uses_oidc_userinfo_sub(self):
+        controller = AutomatifySocialLinkedInOAuthController()
+        response = Mock(status_code=200, text="")
+        response.json.return_value = {
+            "sub": "member-123",
+            "name": "LinkedIn Test Member",
+        }
+        with patch(
+            "odoo.addons.automatify_social_linkedin.controllers.oauth.requests.get",
+            return_value=response,
+        ) as get_request:
+            author_urn, display_name = controller._resolve_member("test-token")
+
+        self.assertEqual(author_urn, "urn:li:person:member-123")
+        self.assertEqual(display_name, "LinkedIn Test Member")
+        self.assertEqual(
+            get_request.call_args.args[0], "https://api.linkedin.com/v2/userinfo"
         )
 
     def test_redirect_uri_uses_odoo_base_url(self):
