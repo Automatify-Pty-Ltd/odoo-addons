@@ -89,10 +89,20 @@ class AutomatifySocialPost(models.Model):
             return
         for post in self.sorted(key=lambda record: record.id):
             state = post._lock_for_publish()
-            if edits_schedule and state not in ("draft", "scheduled"):
-                raise UserError(
-                    _("Scheduled time can only be changed while a post is Draft or Scheduled.")
-                )
+            if edits_schedule:
+                if state not in ("draft", "scheduled"):
+                    raise UserError(
+                        _("Scheduled time can only be changed while a post is Draft or Scheduled.")
+                    )
+                if state == "scheduled":
+                    scheduled_value = vals.get("scheduled_at")
+                    if not scheduled_value:
+                        raise UserError(
+                            _("A scheduled post must keep a scheduled date and time.")
+                        )
+                    scheduled_at = fields.Datetime.to_datetime(scheduled_value)
+                    if scheduled_at <= fields.Datetime.now():
+                        raise UserError(_("Scheduled time must be in the future."))
             if not edits_authoring:
                 continue
             post.target_ids.invalidate_recordset(
@@ -199,28 +209,30 @@ class AutomatifySocialPost(models.Model):
         return True
 
     def action_publish_now(self):
-        for post in self.sorted(key=lambda record: record.id):
-            state = post._lock_for_publish()
-            post.invalidate_recordset(["target_ids"])
-            post._require_targets()
-            if state in ("processing", "published", "cancelled"):
-                raise UserError(_("This post cannot be published in its current state."))
-            if post._unknown_targets():
-                raise UserError(
-                    _(
-                        "A channel has an unknown publication outcome. Verify the post on the "
-                        "network before attempting any new publication."
-                    )
+        if len(self) != 1:
+            raise UserError(_("Post Now can only publish one post at a time."))
+        post = self
+        state = post._lock_for_publish()
+        post.invalidate_recordset(["target_ids"])
+        post._require_targets()
+        if state in ("processing", "published", "cancelled"):
+            raise UserError(_("This post cannot be published in its current state."))
+        if post._unknown_targets():
+            raise UserError(
+                _(
+                    "A channel has an unknown publication outcome. Verify the post on the "
+                    "network before attempting any new publication."
                 )
-            if state == "failed" and post.target_ids.filtered(
-                lambda target: target.state == "failed"
-            ):
-                raise UserError(_("Use Retry Failed to retry failed channels."))
-            values = {"state": "processing", "failure_reason": False}
-            if state == "draft":
-                values["scheduled_at"] = False
-            post._write_workflow_values(values)
-            post._publish_pending_targets()
+            )
+        if state == "failed" and post.target_ids.filtered(
+            lambda target: target.state == "failed"
+        ):
+            raise UserError(_("Use Retry Failed to retry failed channels."))
+        values = {"state": "processing", "failure_reason": False}
+        if state == "draft":
+            values["scheduled_at"] = False
+        post._write_workflow_values(values)
+        post._publish_pending_targets()
         return True
 
     def _publish_pending_targets(self):
@@ -293,46 +305,48 @@ class AutomatifySocialPost(models.Model):
                 )
 
     def action_retry_failed(self):
-        for post in self.sorted(key=lambda record: record.id):
-            state = post._lock_for_publish()
-            post.target_ids.invalidate_recordset(
-                [
-                    "state",
-                    "external_post_id",
-                    "external_url",
-                    "published_at",
-                    "error_message",
-                ]
-            )
-            if state != "failed":
-                raise UserError(_("Only failed posts can be retried."))
-            if post._unknown_targets():
-                raise UserError(
-                    _(
-                        "A channel has an unknown publication outcome and cannot be retried "
-                        "automatically. Verify the post on the remote network first."
-                    )
+        if len(self) != 1:
+            raise UserError(_("Retry Failed can only retry one post at a time."))
+        post = self
+        state = post._lock_for_publish()
+        post.target_ids.invalidate_recordset(
+            [
+                "state",
+                "external_post_id",
+                "external_url",
+                "published_at",
+                "error_message",
+            ]
+        )
+        if state != "failed":
+            raise UserError(_("Only failed posts can be retried."))
+        if post._unknown_targets():
+            raise UserError(
+                _(
+                    "A channel has an unknown publication outcome and cannot be retried "
+                    "automatically. Verify the post on the remote network first."
                 )
-            failed = post.target_ids.filtered(lambda target: target.state == "failed")
-            if not failed:
-                raise UserError(_("There are no failed channels to retry."))
-
-            recovered = failed.filtered(
-                lambda target: target.external_post_id or target.external_url
             )
-            for target in recovered:
-                target.sudo().write(
-                    {
-                        "state": "published",
-                        "published_at": target.published_at or fields.Datetime.now(),
-                        "error_message": False,
-                    }
-                )
+        failed = post.target_ids.filtered(lambda target: target.state == "failed")
+        if not failed:
+            raise UserError(_("There are no failed channels to retry."))
 
-            retryable = failed - recovered
-            retryable.sudo().write({"state": "pending", "error_message": False})
-            post._write_workflow_values({"state": "processing", "failure_reason": False})
-            post._publish_pending_targets()
+        recovered = failed.filtered(
+            lambda target: target.external_post_id or target.external_url
+        )
+        for target in recovered:
+            target.sudo().write(
+                {
+                    "state": "published",
+                    "published_at": target.published_at or fields.Datetime.now(),
+                    "error_message": False,
+                }
+            )
+
+        retryable = failed - recovered
+        retryable.sudo().write({"state": "pending", "error_message": False})
+        post._write_workflow_values({"state": "processing", "failure_reason": False})
+        post._publish_pending_targets()
         return True
 
     def action_cancel(self):
