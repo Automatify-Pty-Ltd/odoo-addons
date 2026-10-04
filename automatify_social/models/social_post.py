@@ -119,6 +119,10 @@ class AutomatifySocialPost(models.Model):
         self._ensure_edit_fields_allowed(vals)
         return super().write(vals)
 
+    def _write_workflow_values(self, vals):
+        """Apply action-managed values without re-entering public edit guards."""
+        return super(AutomatifySocialPost, self.sudo()).write(vals)
+
     @api.depends("message")
     def _compute_message_text(self):
         for post in self:
@@ -191,7 +195,7 @@ class AutomatifySocialPost(models.Model):
         if self.scheduled_at <= fields.Datetime.now():
             raise UserError(_("Scheduled time must be in the future."))
         self.target_ids.sudo().write({"state": "pending", "error_message": False})
-        self.sudo().write({"state": "scheduled", "failure_reason": False})
+        self._write_workflow_values({"state": "scheduled", "failure_reason": False})
         return True
 
     def action_publish_now(self):
@@ -215,7 +219,7 @@ class AutomatifySocialPost(models.Model):
             values = {"state": "processing", "failure_reason": False}
             if state == "draft":
                 values["scheduled_at"] = False
-            post.sudo().write(values)
+            post._write_workflow_values(values)
             post._publish_pending_targets()
         return True
 
@@ -263,7 +267,7 @@ class AutomatifySocialPost(models.Model):
             failed = post.target_ids.filtered(lambda target: target.state == "failed")
             pending = post.target_ids.filtered(lambda target: target.state == "pending")
             if unknown:
-                post.sudo().write(
+                post._write_workflow_values(
                     {
                         "state": "failed",
                         "failure_reason": _(
@@ -273,14 +277,14 @@ class AutomatifySocialPost(models.Model):
                     }
                 )
             elif failed:
-                post.sudo().write(
+                post._write_workflow_values(
                     {
                         "state": "failed",
                         "failure_reason": _("One or more channels failed to publish."),
                     }
                 )
             elif not pending:
-                post.sudo().write(
+                post._write_workflow_values(
                     {
                         "state": "published",
                         "published_at": fields.Datetime.now(),
@@ -327,7 +331,7 @@ class AutomatifySocialPost(models.Model):
 
             retryable = failed - recovered
             retryable.sudo().write({"state": "pending", "error_message": False})
-            post.sudo().write({"state": "processing", "failure_reason": False})
+            post._write_workflow_values({"state": "processing", "failure_reason": False})
             post._publish_pending_targets()
         return True
 
@@ -336,7 +340,7 @@ class AutomatifySocialPost(models.Model):
             state = post._lock_for_publish()
             if state in ("processing", "published"):
                 raise UserError(_("Processing or published posts cannot be cancelled."))
-            post.sudo().write({"state": "cancelled"})
+            post._write_workflow_values({"state": "cancelled"})
         return True
 
     def action_reset_to_draft(self):
@@ -359,7 +363,7 @@ class AutomatifySocialPost(models.Model):
                     )
                 )
             post.target_ids.sudo().write({"state": "pending", "error_message": False})
-            post.sudo().write(
+            post._write_workflow_values(
                 {
                     "state": "draft",
                     "scheduled_at": False,
