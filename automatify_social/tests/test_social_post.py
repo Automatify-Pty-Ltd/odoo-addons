@@ -1,10 +1,12 @@
 import base64
 from datetime import timedelta
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 from odoo import fields
 from odoo.exceptions import UserError, ValidationError
-from odoo.tests.common import TransactionCase
+from odoo.tests.common import TransactionCase, new_test_user
+
+from odoo.addons.automatify_social.providers.base import ProviderPublishResult
 
 
 class TestSocialPost(TransactionCase):
@@ -112,6 +114,30 @@ class TestSocialPost(TransactionCase):
         self.assertEqual(post.state, "failed")
         self.assertEqual(post.target_ids.state, "failed")
         self.assertIn("No social provider connector", post.target_ids.error_message)
+
+    def test_social_user_publish_elevates_only_provider_account(self):
+        social_user = new_test_user(
+            self.env,
+            login="social-publisher-user",
+            groups="automatify_social.group_automatify_social_user",
+        )
+        provider = Mock()
+        provider.publish.return_value = ProviderPublishResult(
+            external_post_id="remote-123",
+            external_url="https://example.test/status/remote-123",
+            published_at=fields.Datetime.now(),
+        )
+        post = self._make_post().with_user(social_user)
+
+        with patch.object(
+            type(self.account), "_get_social_provider", return_value=provider
+        ):
+            post.action_publish_now()
+
+        published_account, published_post = provider.publish.call_args.args
+        self.assertTrue(published_account.env.su)
+        self.assertFalse(published_post.env.su)
+        self.assertEqual(post.state, "published")
 
     def test_cancel_and_reset(self):
         post = self._make_post()

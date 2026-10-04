@@ -155,8 +155,12 @@ class AutomatifySocialPost(models.Model):
             targets = post.target_ids.filtered(lambda target: target.state == "pending")
             for target in targets:
                 try:
-                    provider = target.account_id._get_social_provider()
-                    result = provider.publish(target.account_id, post)
+                    account = target.account_id
+                    provider = account._get_social_provider()
+                    # Authorization is enforced on the post/target/account before this point.
+                    # Elevate only the internal provider record so connector code can use
+                    # manager-restricted OAuth token fields without exposing them to publishers.
+                    result = provider.publish(account.sudo(), post)
                     target.write(
                         {
                             "state": "published",
