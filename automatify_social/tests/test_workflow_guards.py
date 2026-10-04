@@ -66,7 +66,7 @@ class TestSocialWorkflowGuards(TransactionCase):
         target = post.target_ids.with_user(self.social_user)
 
         target.write({"account_id": self.other_account.id})
-        self.assertEqual(target.account_id, self.other_account)
+        self.assertEqual(target.account_id.id, self.other_account.id)
 
         post.scheduled_at = fields.Datetime.now() + timedelta(hours=1)
         post.with_user(self.social_user).action_schedule()
