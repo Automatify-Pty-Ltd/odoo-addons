@@ -15,6 +15,8 @@ class AutomatifySocialPost(models.Model):
     _inherit = ["mail.thread", "mail.activity.mixin"]
     _order = "scheduled_at desc, id desc"
 
+    _WORKFLOW_MANAGED_FIELDS = frozenset({"state", "published_at", "failure_reason"})
+
     name = fields.Char(compute="_compute_name")
     message = fields.Html(
         string="Post Content",
@@ -67,6 +69,26 @@ class AutomatifySocialPost(models.Model):
         copy=True,
     )
     failure_reason = fields.Text(readonly=True)
+
+    def _ensure_workflow_fields_allowed(self, vals):
+        if self.env.su or self.env.user.has_group(
+            "automatify_social.group_automatify_social_manager"
+        ):
+            return
+        if self._WORKFLOW_MANAGED_FIELDS.intersection(vals):
+            raise AccessError(
+                _("Publication status and result fields are managed by Social Publisher actions.")
+            )
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        for vals in vals_list:
+            self._ensure_workflow_fields_allowed(vals)
+        return super().create(vals_list)
+
+    def write(self, vals):
+        self._ensure_workflow_fields_allowed(vals)
+        return super().write(vals)
 
     @api.depends("message")
     def _compute_message_text(self):
@@ -137,7 +159,7 @@ class AutomatifySocialPost(models.Model):
         if state != "draft":
             raise UserError(_("Only draft posts can be scheduled."))
         self.target_ids.sudo().write({"state": "pending", "error_message": False})
-        self.write({"state": "scheduled", "failure_reason": False})
+        self.sudo().write({"state": "scheduled", "failure_reason": False})
         return True
 
     def action_publish_now(self):
@@ -160,7 +182,7 @@ class AutomatifySocialPost(models.Model):
             values = {"state": "processing", "failure_reason": False}
             if state == "draft":
                 values["scheduled_at"] = False
-            post.write(values)
+            post.sudo().write(values)
             post._publish_pending_targets()
         return True
 
@@ -208,7 +230,7 @@ class AutomatifySocialPost(models.Model):
             failed = post.target_ids.filtered(lambda target: target.state == "failed")
             pending = post.target_ids.filtered(lambda target: target.state == "pending")
             if unknown:
-                post.write(
+                post.sudo().write(
                     {
                         "state": "failed",
                         "failure_reason": _(
@@ -218,14 +240,14 @@ class AutomatifySocialPost(models.Model):
                     }
                 )
             elif failed:
-                post.write(
+                post.sudo().write(
                     {
                         "state": "failed",
                         "failure_reason": _("One or more channels failed to publish."),
                     }
                 )
             elif not pending:
-                post.write(
+                post.sudo().write(
                     {
                         "state": "published",
                         "published_at": fields.Datetime.now(),
@@ -268,7 +290,7 @@ class AutomatifySocialPost(models.Model):
             state = post._lock_for_publish()
             if state in ("processing", "published"):
                 raise UserError(_("Processing or published posts cannot be cancelled."))
-            post.write({"state": "cancelled"})
+            post.sudo().write({"state": "cancelled"})
         return True
 
     def action_reset_to_draft(self):
@@ -291,7 +313,7 @@ class AutomatifySocialPost(models.Model):
                     )
                 )
             post.target_ids.sudo().write({"state": "pending", "error_message": False})
-            post.write(
+            post.sudo().write(
                 {
                     "state": "draft",
                     "scheduled_at": False,
@@ -379,6 +401,22 @@ class AutomatifySocialPostTarget(models.Model):
                 _("Publication status and remote-result fields are managed by Social Publisher.")
             )
 
+    def _ensure_account_change_allowed(self, vals):
+        if "account_id" not in vals or self.env.su:
+            return
+        locked_states = {}
+        for post in self.mapped("post_id").sorted(key=lambda record: record.id):
+            locked_states[post.id] = post._lock_for_publish()
+        self.invalidate_recordset(["state", "post_id"])
+        for target in self:
+            if target.state != "pending" or locked_states.get(target.post_id.id) != "draft":
+                raise AccessError(
+                    _(
+                        "A social account can only be changed while its post is still in Draft "
+                        "and the channel has not started publication."
+                    )
+                )
+
     @api.model_create_multi
     def create(self, vals_list):
         for vals in vals_list:
@@ -387,6 +425,7 @@ class AutomatifySocialPostTarget(models.Model):
 
     def write(self, vals):
         self._ensure_workflow_fields_allowed(vals)
+        self._ensure_account_change_allowed(vals)
         return super().write(vals)
 
     @api.constrains("post_id", "account_id")
