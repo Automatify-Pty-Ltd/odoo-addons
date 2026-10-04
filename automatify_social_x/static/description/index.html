@@ -12,6 +12,17 @@
 
 <section class="oe_container">
     <div class="oe_row oe_spaced">
+        <h3>Compose and publish</h3>
+        <img src="01_compose_screenshot.png" class="img img-fluid" alt="Social Publisher compose form in Odoo"/>
+        <h3>LinkedIn and X publication targets</h3>
+        <img src="02_published_linkedin_x.png" class="img img-fluid" alt="Published LinkedIn and X targets in Odoo"/>
+        <h3>Calendar scheduling</h3>
+        <img src="03_calendar_scheduling.png" class="img img-fluid" alt="Social publishing calendar in Odoo"/>
+    </div>
+</section>
+
+<section class="oe_container">
+    <div class="oe_row oe_spaced">
         <h3>Features</h3>
         <ul>
             <li>OAuth 2.0 Authorization Code flow with PKCE S256.</li>
@@ -24,11 +35,6 @@
             <li>Integration with core scheduling, retries, and per-channel publication status.</li>
             <li>One-time, expiring OAuth state bound to the initiating Odoo user and account.</li>
         </ul>
-    </div>
-</section>
-
-<section class="oe_container">
-    <div class="oe_row oe_spaced">
         <h3>Setup</h3>
         <ol>
             <li>Create or use your own X Developer App.</li>
@@ -39,28 +45,8 @@
             <li>Create an X Social Account in Odoo and choose <strong>Connect X</strong>.</li>
         </ol>
         <p>
-            The OAuth Redirect URL is generated from your installation's standard Odoo
-            <code>web.base.url</code>. Make sure that value is your public HTTPS Odoo address before
-            configuring the X Developer App. No Automatify production callback URL or provider
-            credential is bundled with this addon.
-        </p>
-    </div>
-</section>
-
-<section class="oe_container">
-    <div class="oe_row oe_spaced">
-        <h3>Requirements and external service</h3>
-        <p>
-            Requires <strong>Social Publisher</strong> and an X Developer App owned or authorized
-            by the installing organization. X controls API access, billing or usage credits,
-            limits, pricing, and availability. Existing connections created without
-            <code>media.write</code> must reconnect before image publishing.
-        </p>
-        <p>
-            Client credentials and OAuth tokens are not bundled with this addon. The connector
-            communicates directly with X's official OAuth, media-upload, and Posts API endpoints.
-            Post text and selected image bytes are sent to X only when publishing or when a
-            scheduled post becomes due.
+            The redirect URL is generated from the installation's standard Odoo <code>web.base.url</code>.
+            No production callback URL, client credential, or OAuth token is bundled with this addon.
         </p>
         <p><strong>License:</strong> LGPL-3</p>
         <p><strong>Support:</strong> <a href="mailto:admin@automatify.com.au">admin@automatify.com.au</a></p>

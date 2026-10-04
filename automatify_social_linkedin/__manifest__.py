@@ -14,6 +14,11 @@
         "views/social_account_views.xml",
         "views/linkedin_settings_views.xml",
     ],
+    "images": [
+        "static/description/01_compose_screenshot.png",
+        "static/description/02_published_linkedin_x.png",
+        "static/description/03_calendar_scheduling.png",
+    ],
     "installable": True,
     "auto_install": False,
     "application": False,

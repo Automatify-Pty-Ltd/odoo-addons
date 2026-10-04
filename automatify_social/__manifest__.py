@@ -16,6 +16,11 @@
         "views/social_menus.xml",
         "data/social_cron.xml",
     ],
+    "images": [
+        "static/description/01_compose_screenshot.png",
+        "static/description/02_published_linkedin_x.png",
+        "static/description/03_calendar_scheduling.png",
+    ],
     "installable": True,
     "auto_install": False,
     "application": True,
