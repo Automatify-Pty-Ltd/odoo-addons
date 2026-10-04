@@ -3,7 +3,7 @@ from datetime import timedelta
 from unittest.mock import Mock, patch
 
 from odoo import fields
-from odoo.exceptions import UserError, ValidationError
+from odoo.exceptions import AccessError, UserError, ValidationError
 from odoo.tests.common import TransactionCase, new_test_user
 
 from odoo.addons.automatify_social.providers.base import (
@@ -180,12 +180,54 @@ class TestSocialPost(TransactionCase):
         self.assertFalse(published_post.env.su)
         self.assertEqual(post.state, "published")
 
+    def test_social_user_cannot_rewrite_target_workflow_fields(self):
+        social_user = new_test_user(
+            self.env,
+            login="social-target-guard-user",
+            groups="automatify_social.group_automatify_social_user",
+        )
+        post = self._make_post()
+        target = post.target_ids
+        target.sudo().write(
+            {
+                "state": "unknown",
+                "error_message": "Remote publication outcome is unknown",
+            }
+        )
+
+        with self.assertRaises(AccessError):
+            target.with_user(social_user).write({"state": "pending"})
+        with self.assertRaises(AccessError):
+            target.with_user(social_user).write({"external_post_id": "fake-id"})
+
+        other_post = self.env["automatify.social.post"].create(
+            {"message": "Another post", "company_id": self.env.company.id}
+        )
+        with self.assertRaises(AccessError):
+            target.with_user(social_user).write({"post_id": other_post.id})
+
+        target.with_user(social_user).write({"account_id": self.account.id})
+        self.assertEqual(target.state, "unknown")
+
     def test_cancel_and_reset(self):
         post = self._make_post()
         post.action_cancel()
         self.assertEqual(post.state, "cancelled")
         post.action_reset_to_draft()
         self.assertEqual(post.state, "draft")
+
+    def test_cancel_rechecks_locked_state(self):
+        post = self._make_post()
+        post.flush_recordset(["state"])
+        self.env.cr.execute(
+            "UPDATE automatify_social_post SET state = %s WHERE id = %s",
+            ["processing", post.id],
+        )
+
+        with self.assertRaises(UserError):
+            post.action_cancel()
+
+        self.assertEqual(post.state, "processing")
 
     def test_reset_to_draft_rechecks_locked_state(self):
         post = self._make_post()
@@ -235,7 +277,7 @@ class TestSocialPost(TransactionCase):
     def test_retry_recovers_remote_success_without_republishing(self):
         post = self._make_post()
         target = post.target_ids
-        target.write(
+        target.sudo().write(
             {
                 "state": "failed",
                 "external_post_id": "remote-123",
