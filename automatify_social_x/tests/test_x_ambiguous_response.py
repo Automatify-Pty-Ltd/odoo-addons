@@ -38,3 +38,13 @@ class TestXAmbiguousAcceptedResponse(TransactionCase):
         ):
             with self.assertRaises(AmbiguousPublishError):
                 self.account._get_social_provider().publish(self.account, self.post)
+
+    @patch("odoo.addons.automatify_social_x.providers.x.requests.post")
+    def test_5xx_publish_response_is_ambiguous(self, post_request):
+        post_request.return_value = Mock(status_code=503, text="service unavailable")
+
+        with patch.object(
+            type(self.account), "_x_get_access_token", return_value="token"
+        ):
+            with self.assertRaises(AmbiguousPublishError):
+                self.account._get_social_provider().publish(self.account, self.post)
