@@ -82,11 +82,19 @@ class AutomatifySocialPost(models.Model):
                 _("Publication status and result fields are managed by Social Publisher actions.")
             )
 
-    def _ensure_authoring_fields_allowed(self, vals):
-        if not self._AUTHORING_FIELDS.intersection(vals):
+    def _ensure_edit_fields_allowed(self, vals):
+        edits_authoring = bool(self._AUTHORING_FIELDS.intersection(vals))
+        edits_schedule = "scheduled_at" in vals
+        if not edits_authoring and not edits_schedule:
             return
         for post in self.sorted(key=lambda record: record.id):
             state = post._lock_for_publish()
+            if edits_schedule and state not in ("draft", "scheduled"):
+                raise UserError(
+                    _("Scheduled time can only be changed while a post is Draft or Scheduled.")
+                )
+            if not edits_authoring:
+                continue
             post.target_ids.invalidate_recordset(
                 ["state", "external_post_id", "external_url"]
             )
@@ -108,7 +116,7 @@ class AutomatifySocialPost(models.Model):
 
     def write(self, vals):
         self._ensure_workflow_fields_allowed(vals)
-        self._ensure_authoring_fields_allowed(vals)
+        self._ensure_edit_fields_allowed(vals)
         return super().write(vals)
 
     @api.depends("message")
@@ -173,22 +181,24 @@ class AutomatifySocialPost(models.Model):
 
     def action_schedule(self):
         self.ensure_one()
+        state = self._lock_for_publish()
+        self.invalidate_recordset(["scheduled_at", "target_ids"])
         self._require_targets()
+        if state != "draft":
+            raise UserError(_("Only draft posts can be scheduled."))
         if not self.scheduled_at:
             raise UserError(_("Choose a scheduled date and time first."))
         if self.scheduled_at <= fields.Datetime.now():
             raise UserError(_("Scheduled time must be in the future."))
-        state = self._lock_for_publish()
-        if state != "draft":
-            raise UserError(_("Only draft posts can be scheduled."))
         self.target_ids.sudo().write({"state": "pending", "error_message": False})
         self.sudo().write({"state": "scheduled", "failure_reason": False})
         return True
 
     def action_publish_now(self):
         for post in self.sorted(key=lambda record: record.id):
-            post._require_targets()
             state = post._lock_for_publish()
+            post.invalidate_recordset(["target_ids"])
+            post._require_targets()
             if state in ("processing", "published", "cancelled"):
                 raise UserError(_("This post cannot be published in its current state."))
             if post._unknown_targets():
@@ -493,6 +503,25 @@ class AutomatifySocialPostTarget(models.Model):
         self._ensure_workflow_fields_allowed(vals)
         self._ensure_account_change_allowed(vals)
         return super().write(vals)
+
+    def unlink(self):
+        if not self.env.su:
+            locked_states = {}
+            for post in self.mapped("post_id").sorted(key=lambda record: record.id):
+                locked_states[post.id] = post._lock_for_publish()
+            self.invalidate_recordset(["state", "post_id"])
+            for target in self:
+                if (
+                    target.state != "pending"
+                    or locked_states.get(target.post_id.id) != "draft"
+                ):
+                    raise AccessError(
+                        _(
+                            "Channels can only be removed while the post is still in Draft and "
+                            "the channel has not started publication."
+                        )
+                    )
+        return super().unlink()
 
     @api.constrains("post_id", "account_id")
     def _check_company_match(self):
