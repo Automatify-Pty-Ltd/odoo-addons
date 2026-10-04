@@ -1,0 +1,55 @@
+<section class="oe_container">
+    <div class="oe_row oe_spaced text-center">
+        <img src="banner.png" class="img img-fluid" alt="Social Publisher LinkedIn connector"/>
+        <h2 class="oe_slogan">Social Publisher LinkedIn</h2>
+        <h3 class="oe_slogan">LinkedIn publishing for Social Publisher on Odoo 19 Community</h3>
+        <p class="oe_mt32 text-center">
+            Connect a LinkedIn Developer App, authorize a personal profile or Company Page,
+            compose in Odoo, and publish provider-safe text with an optional image through
+            LinkedIn's official APIs.
+        </p>
+    </div>
+</section>
+
+<section class="oe_container">
+    <div class="oe_row oe_spaced">
+        <h3>Compose and publish</h3>
+        <img src="01_compose_screenshot.png" class="img img-fluid" alt="Social Publisher compose form in Odoo"/>
+        <h3>LinkedIn and X publication targets</h3>
+        <img src="02_published_linkedin_x.png" class="img img-fluid" alt="Published LinkedIn and X targets in Odoo"/>
+        <h3>Calendar scheduling</h3>
+        <img src="03_calendar_scheduling.png" class="img img-fluid" alt="Social publishing calendar in Odoo"/>
+    </div>
+</section>
+
+<section class="oe_container">
+    <div class="oe_row oe_spaced">
+        <h3>Features</h3>
+        <ul>
+            <li>Three-legged LinkedIn OAuth Authorization Code flow.</li>
+            <li>Personal Profile and Company Page author modes.</li>
+            <li>Current Personal Profile flow uses LinkedIn OpenID Connect plus Share on LinkedIn permissions.</li>
+            <li>Company Page eligibility validation through LinkedIn organization access APIs.</li>
+            <li>Provider-safe text publishing through the versioned LinkedIn Posts API.</li>
+            <li>Single-image JPG, PNG, or GIF publishing through LinkedIn Images + Posts APIs.</li>
+            <li>External post ID and LinkedIn link stored on the publication target.</li>
+            <li>Integration with core scheduling, retries, and per-channel publication status.</li>
+            <li>One-time, expiring OAuth state bound to the initiating Odoo user and account.</li>
+        </ul>
+        <h3>Setup</h3>
+        <ol>
+            <li>Create or use your own LinkedIn Developer App.</li>
+            <li>For Personal Profile publishing, enable <strong>Share on LinkedIn</strong> and <strong>Sign In with LinkedIn using OpenID Connect</strong>. Company Page publishing requires the appropriate LinkedIn organization API access.</li>
+            <li>Open <strong>Social Marketing &rarr; Configuration &rarr; LinkedIn Settings</strong>.</li>
+            <li>Enter your own LinkedIn Client ID and Client Secret.</li>
+            <li>Copy the OAuth Redirect URL displayed by Odoo into the exact Redirect URLs for your LinkedIn app.</li>
+            <li>Create a LinkedIn Social Account in Odoo and choose <strong>Connect LinkedIn</strong>.</li>
+        </ol>
+        <p>
+            The redirect URL is generated from the installation's standard Odoo <code>web.base.url</code>.
+            No production callback URL, client credential, or OAuth token is bundled with this addon.
+        </p>
+        <p><strong>License:</strong> LGPL-3</p>
+        <p><strong>Support:</strong> <a href="mailto:admin@automatify.com.au">admin@automatify.com.au</a></p>
+    </div>
+</section>

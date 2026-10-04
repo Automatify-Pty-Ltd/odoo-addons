@@ -1,0 +1,25 @@
+{
+    "name": "Social Publisher LinkedIn",
+    "version": "19.0.1.2.0",
+    "summary": "LinkedIn connector for Social Publisher",
+    "author": "Automatify Pty Ltd",
+    "website": "https://automatify.com.au",
+    "support": "admin@automatify.com.au",
+    "license": "LGPL-3",
+    "category": "Marketing/Social Marketing",
+    "depends": ["automatify_social"],
+    "external_dependencies": {"python": ["requests"]},
+    "data": [
+        "security/ir.model.access.csv",
+        "views/social_account_views.xml",
+        "views/linkedin_settings_views.xml",
+    ],
+    "images": [
+        "static/description/01_compose_screenshot.png",
+        "static/description/02_published_linkedin_x.png",
+        "static/description/03_calendar_scheduling.png",
+    ],
+    "installable": True,
+    "auto_install": False,
+    "application": False,
+}

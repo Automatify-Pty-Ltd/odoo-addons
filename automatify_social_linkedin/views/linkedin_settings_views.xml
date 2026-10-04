@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_automatify_social_linkedin_settings_form" model="ir.ui.view">
+        <field name="name">automatify.social.linkedin.settings.form</field>
+        <field name="model">automatify.social.linkedin.settings</field>
+        <field name="arch" type="xml">
+            <form string="LinkedIn Settings">
+                <sheet>
+                    <group string="LinkedIn Developer App">
+                        <field name="client_id"/>
+                        <field name="client_secret" password="True"/>
+                        <field name="callback_url" readonly="1"/>
+                    </group>
+                    <div class="text-muted">
+                        Use a LinkedIn Developer App owned by your organization. Add the OAuth Redirect URL above as an exact Redirect URL in the app's Auth settings.
+                    </div>
+                </sheet>
+                <footer>
+                    <button name="action_save" type="object" string="Save" class="btn-primary"/>
+                    <button string="Cancel" special="cancel" class="btn-secondary"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_automatify_social_linkedin_settings" model="ir.actions.act_window">
+        <field name="name">LinkedIn Settings</field>
+        <field name="res_model">automatify.social.linkedin.settings</field>
+        <field name="view_mode">form</field>
+        <field name="view_id" ref="view_automatify_social_linkedin_settings_form"/>
+        <field name="target">new</field>
+    </record>
+
+    <menuitem
+        id="menu_automatify_social_linkedin_settings"
+        name="LinkedIn Settings"
+        parent="automatify_social.menu_automatify_social_configuration"
+        action="action_automatify_social_linkedin_settings"
+        sequence="20"
+        groups="automatify_social.group_automatify_social_manager"
+    />
+</odoo>
