@@ -57,6 +57,59 @@ class TestLinkedInOAuth(TransactionCase):
             get_request.call_args.args[0], "https://api.linkedin.com/v2/userinfo"
         )
 
+    def test_organization_identity_traverses_acl_pages(self):
+        controller = AutomatifySocialLinkedInOAuthController()
+        configured_urn = "urn:li:organization:222"
+        self.account.linkedin_author_urn = configured_urn
+
+        first_response = Mock(status_code=200, text="")
+        first_response.json.return_value = {
+            "elements": [
+                {
+                    "state": "APPROVED",
+                    "role": "ADMINISTRATOR",
+                    "organization": "urn:li:organization:111",
+                }
+            ],
+            "paging": {
+                "start": 0,
+                "count": 1,
+                "links": [{"rel": "next", "href": "/rest/organizationAcls?start=1"}],
+            },
+        }
+        second_response = Mock(status_code=200, text="")
+        second_response.json.return_value = {
+            "elements": [
+                {
+                    "state": "APPROVED",
+                    "role": "CONTENT_ADMIN",
+                    "organizationTarget": configured_urn,
+                }
+            ],
+            "paging": {"start": 1, "count": 1, "links": []},
+        }
+
+        with patch(
+            "odoo.addons.automatify_social_linkedin.controllers.oauth.requests.get",
+            side_effect=[first_response, second_response],
+        ) as get_request:
+            author_urn, display_name = controller._resolve_organization(
+                self.account, "test-token"
+            )
+
+        self.assertEqual(author_urn, configured_urn)
+        self.assertIsNone(display_name)
+        self.assertEqual(get_request.call_count, 2)
+        self.assertEqual(
+            get_request.call_args_list[1].kwargs["params"],
+            {
+                "q": "roleAssignee",
+                "state": "APPROVED",
+                "start": 1,
+                "count": 1,
+            },
+        )
+
     def test_redirect_uri_uses_odoo_base_url(self):
         self.env["ir.config_parameter"].sudo().set_param(
             "web.base.url", "https://odoo.example.com/"
