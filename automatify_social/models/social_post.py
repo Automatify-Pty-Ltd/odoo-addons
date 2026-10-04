@@ -2,7 +2,8 @@ import logging
 
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError, ValidationError
-from odoo.tools import html2plaintext, is_html_empty
+
+from ..providers.base import html_to_provider_text
 
 _logger = logging.getLogger(__name__)
 
@@ -10,30 +11,18 @@ _logger = logging.getLogger(__name__)
 class AutomatifySocialPost(models.Model):
     _name = "automatify.social.post"
     _description = "Social Post"
-    _inherit = ["mail.thread", "mail.activity.mixin"]
     _order = "scheduled_at desc, id desc"
 
-    name = fields.Char(compute="_compute_name")
-    message = fields.Html(
-        string="Post Content",
-        required=True,
-        tracking=True,
-        sanitize=True,
-        help="Rich authoring content. Connectors publish a provider-safe text rendering.",
-    )
+    name = fields.Char(compute="_compute_name", store=False)
+    message = fields.Html(string="Post Content", sanitize=True, required=True)
     message_text = fields.Text(
-        string="Outbound Text",
-        compute="_compute_message_text",
-        help="Plain-text representation sent to social-network APIs.",
+        string="Provider Preview", compute="_compute_message_text", store=False
     )
-    image_ids = fields.Many2many(
-        "ir.attachment",
-        "automatify_social_post_image_rel",
-        "post_id",
-        "attachment_id",
-        string="Image",
-        copy=False,
-        help="Optional image attached to this social post. Stage 1.1 supports one image per post.",
+    company_id = fields.Many2one(
+        "res.company",
+        required=True,
+        default=lambda self: self.env.company,
+        index=True,
     )
     state = fields.Selection(
         selection=[
@@ -47,16 +36,17 @@ class AutomatifySocialPost(models.Model):
         default="draft",
         required=True,
         index=True,
-        tracking=True,
     )
-    scheduled_at = fields.Datetime(index=True, tracking=True)
-    published_at = fields.Datetime(readonly=True, tracking=True)
-    company_id = fields.Many2one(
-        "res.company",
-        required=True,
-        default=lambda self: self.env.company,
-        index=True,
-        ondelete="cascade",
+    scheduled_at = fields.Datetime(index=True)
+    published_at = fields.Datetime(readonly=True, copy=False)
+    failure_reason = fields.Text(readonly=True, copy=False)
+    image_ids = fields.Many2many(
+        "ir.attachment",
+        "automatify_social_post_ir_attachment_rel",
+        "post_id",
+        "attachment_id",
+        string="Image",
+        copy=False,
     )
     target_ids = fields.One2many(
         "automatify.social.post.target",
@@ -64,31 +54,29 @@ class AutomatifySocialPost(models.Model):
         string="Channels",
         copy=True,
     )
-    failure_reason = fields.Text(readonly=True)
-
-    @api.depends("message")
-    def _compute_message_text(self):
-        for post in self:
-            post.message_text = html2plaintext(post.message or "", include_references=True)
 
     @api.depends("message")
     def _compute_name(self):
         for post in self:
-            text = html2plaintext(post.message or "", include_references=False)
-            text = " ".join(text.split())
-            post.name = text[:80] or _("Social Post")
+            text = html_to_provider_text(post.message)
+            post.name = text[:80] if text else _("Social Post")
+
+    @api.depends("message")
+    def _compute_message_text(self):
+        for post in self:
+            post.message_text = html_to_provider_text(post.message)
 
     @api.constrains("message")
-    def _check_message_content(self):
+    def _check_message(self):
         for post in self:
-            if is_html_empty(post.message):
+            if not html_to_provider_text(post.message):
                 raise ValidationError(_("Post content cannot be empty."))
 
     @api.constrains("image_ids")
     def _check_images(self):
         for post in self:
             if len(post.image_ids) > 1:
-                raise ValidationError(_("Stage 1.1 currently supports one image per social post."))
+                raise ValidationError(_("Stage 1.1 supports one image per post."))
             invalid = post.image_ids.filtered(
                 lambda attachment: not (attachment.mimetype or "").startswith("image/")
             )
@@ -228,7 +216,8 @@ class AutomatifySocialPost(models.Model):
 
     def action_reset_to_draft(self):
         for post in self:
-            if post.state in ("processing", "published"):
+            state = post._lock_for_publish()
+            if state in ("processing", "published"):
                 raise UserError(_("Processing or published posts cannot be reset to draft."))
             if post.target_ids.filtered(lambda target: target.state == "published"):
                 raise UserError(
@@ -272,21 +261,10 @@ class AutomatifySocialPostTarget(models.Model):
     _order = "id"
 
     post_id = fields.Many2one(
-        "automatify.social.post",
-        required=True,
-        ondelete="cascade",
-        index=True,
+        "automatify.social.post", required=True, ondelete="cascade", index=True
     )
     account_id = fields.Many2one(
-        "automatify.social.account",
-        required=True,
-        ondelete="restrict",
-        index=True,
-    )
-    company_id = fields.Many2one(
-        related="post_id.company_id",
-        store=True,
-        index=True,
+        "automatify.social.account", required=True, ondelete="restrict", index=True
     )
     state = fields.Selection(
         selection=[
@@ -298,24 +276,18 @@ class AutomatifySocialPostTarget(models.Model):
         required=True,
         index=True,
     )
-    external_post_id = fields.Char(readonly=True)
-    external_url = fields.Char(readonly=True)
-    published_at = fields.Datetime(readonly=True)
-    error_message = fields.Text(readonly=True)
+    external_post_id = fields.Char(readonly=True, copy=False)
+    external_url = fields.Char(readonly=True, copy=False)
+    published_at = fields.Datetime(readonly=True, copy=False)
+    error_message = fields.Text(readonly=True, copy=False)
 
     _post_account_unique = models.Constraint(
-        "unique(post_id, account_id)",
-        "The same social account can only be added once to a post.",
+        "UNIQUE(post_id, account_id)",
+        "Each social account can only be targeted once per post.",
     )
 
-    @api.constrains("post_id", "account_id")
-    def _check_company_match(self):
+    @api.constrains("account_id", "post_id")
+    def _check_account_company(self):
         for target in self:
-            if (
-                target.post_id
-                and target.account_id
-                and target.post_id.company_id != target.account_id.company_id
-            ):
-                raise ValidationError(
-                    _("The social account must belong to the same company as the post.")
-                )
+            if target.account_id.company_id != target.post_id.company_id:
+                raise ValidationError(_("Target account must belong to the post company."))
