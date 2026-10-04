@@ -4,6 +4,8 @@ from odoo import _, api, fields, models
 from odoo.exceptions import UserError, ValidationError
 from odoo.tools import html2plaintext, is_html_empty
 
+from odoo.addons.automatify_social.providers.base import AmbiguousPublishError
+
 _logger = logging.getLogger(__name__)
 
 
@@ -120,15 +122,20 @@ class AutomatifySocialPost(models.Model):
         self.invalidate_recordset(["state"])
         return row[0] if row else self.state
 
+    def _unknown_targets(self):
+        self.ensure_one()
+        return self.target_ids.filtered(lambda target: target.state == "unknown")
+
     def action_schedule(self):
         self.ensure_one()
         self._require_targets()
-        if self.state != "draft":
-            raise UserError(_("Only draft posts can be scheduled."))
         if not self.scheduled_at:
             raise UserError(_("Choose a scheduled date and time first."))
         if self.scheduled_at <= fields.Datetime.now():
             raise UserError(_("Scheduled time must be in the future."))
+        state = self._lock_for_publish()
+        if state != "draft":
+            raise UserError(_("Only draft posts can be scheduled."))
         self.target_ids.write({"state": "pending", "error_message": False})
         self.write({"state": "scheduled", "failure_reason": False})
         return True
@@ -139,6 +146,13 @@ class AutomatifySocialPost(models.Model):
             state = post._lock_for_publish()
             if state in ("processing", "published", "cancelled"):
                 raise UserError(_("This post cannot be published in its current state."))
+            if post._unknown_targets():
+                raise UserError(
+                    _(
+                        "A channel has an unknown publication outcome. Verify the post on the "
+                        "network before attempting any new publication."
+                    )
+                )
             if state == "failed" and post.target_ids.filtered(
                 lambda target: target.state == "failed"
             ):
@@ -170,6 +184,14 @@ class AutomatifySocialPost(models.Model):
                             "error_message": False,
                         }
                     )
+                except AmbiguousPublishError as exc:
+                    _logger.warning(
+                        "Social publish outcome unknown for post %s target %s: %s",
+                        post.id,
+                        target.id,
+                        exc,
+                    )
+                    target.write({"state": "unknown", "error_message": str(exc)})
                 except Exception as exc:
                     _logger.exception(
                         "Social publish failed for post %s target %s",
@@ -178,9 +200,20 @@ class AutomatifySocialPost(models.Model):
                     )
                     target.write({"state": "failed", "error_message": str(exc)})
 
+            unknown = post._unknown_targets()
             failed = post.target_ids.filtered(lambda target: target.state == "failed")
             pending = post.target_ids.filtered(lambda target: target.state == "pending")
-            if failed:
+            if unknown:
+                post.write(
+                    {
+                        "state": "failed",
+                        "failure_reason": _(
+                            "One or more channels have an unknown publication outcome. "
+                            "Verify the remote network before attempting another publication."
+                        ),
+                    }
+                )
+            elif failed:
                 post.write(
                     {
                         "state": "failed",
@@ -198,6 +231,13 @@ class AutomatifySocialPost(models.Model):
 
     def action_retry_failed(self):
         for post in self:
+            if post._unknown_targets():
+                raise UserError(
+                    _(
+                        "A channel has an unknown publication outcome and cannot be retried "
+                        "automatically. Verify the post on the remote network first."
+                    )
+                )
             failed = post.target_ids.filtered(lambda target: target.state == "failed")
             if not failed:
                 raise UserError(_("There are no failed channels to retry."))
@@ -231,6 +271,13 @@ class AutomatifySocialPost(models.Model):
             state = post._lock_for_publish()
             if state in ("processing", "published"):
                 raise UserError(_("Processing or published posts cannot be reset to draft."))
+            if post._unknown_targets():
+                raise UserError(
+                    _(
+                        "A channel has an unknown publication outcome and cannot be reset to "
+                        "draft until the remote post has been verified."
+                    )
+                )
             if post.target_ids.filtered(lambda target: target.state == "published"):
                 raise UserError(
                     _(
@@ -294,6 +341,7 @@ class AutomatifySocialPostTarget(models.Model):
             ("pending", "Pending"),
             ("published", "Published"),
             ("failed", "Failed"),
+            ("unknown", "Outcome Unknown"),
         ],
         default="pending",
         required=True,
@@ -318,5 +366,5 @@ class AutomatifySocialPostTarget(models.Model):
                 and target.post_id.company_id != target.account_id.company_id
             ):
                 raise ValidationError(
-                    _("The social account must belong to the same company as the post.")
+                    _("The social account must belong to the same company as the post."))
                 )
