@@ -106,6 +106,24 @@ class TestSocialWorkflowGuards(TransactionCase):
         self.assertEqual(post.state, "processing")
         self.assertNotIn("Late edit", post.message)
 
+    def test_reschedule_write_rechecks_locked_processing_state(self):
+        post = self._make_post()
+        post.scheduled_at = fields.Datetime.now() + timedelta(hours=1)
+        post.action_schedule()
+        post.flush_recordset(["state"])
+        self.env.cr.execute(
+            "UPDATE automatify_social_post SET state = %s WHERE id = %s",
+            ["processing", post.id],
+        )
+
+        with self.assertRaises(UserError):
+            post.with_user(self.social_user).write(
+                {"scheduled_at": fields.Datetime.now() + timedelta(hours=2)}
+            )
+
+        post.invalidate_recordset(["state"])
+        self.assertEqual(post.state, "processing")
+
     def test_published_content_and_media_are_frozen(self):
         post = self._make_post()
         post.sudo().write({"state": "published", "published_at": fields.Datetime.now()})
@@ -230,3 +248,23 @@ class TestSocialWorkflowGuards(TransactionCase):
         post.invalidate_recordset(["state", "target_ids"])
         self.assertEqual(post.state, "processing")
         self.assertEqual(len(post.target_ids), 1)
+
+    def test_manager_cannot_remove_target_after_publication_starts(self):
+        manager = new_test_user(
+            self.env,
+            login="social-workflow-guard-manager",
+            groups="automatify_social.group_automatify_social_manager",
+        )
+        manager.write(
+            {
+                "company_id": self.env.company.id,
+                "company_ids": [(6, 0, [self.env.company.id])],
+            }
+        )
+        post = self._make_post()
+        post.sudo().write({"state": "published", "published_at": fields.Datetime.now()})
+
+        with self.assertRaises(AccessError):
+            post.target_ids.with_user(manager).unlink()
+
+        self.assertTrue(post.target_ids.exists())
