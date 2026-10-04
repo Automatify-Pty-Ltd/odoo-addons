@@ -213,3 +213,20 @@ class TestSocialWorkflowGuards(TransactionCase):
 
         with self.assertRaises(AccessError):
             target.with_user(self.social_user).write({"account_id": self.other_account.id})
+
+    def test_target_create_rechecks_parent_state_after_lock(self):
+        post = self._make_post()
+        post.flush_recordset(["state"])
+        self.env.cr.execute(
+            "UPDATE automatify_social_post SET state = %s WHERE id = %s",
+            ["processing", post.id],
+        )
+
+        with self.assertRaises(AccessError):
+            self.env["automatify.social.post.target"].with_user(self.social_user).create(
+                {"post_id": post.id, "account_id": self.other_account.id}
+            )
+
+        post.invalidate_recordset(["state", "target_ids"])
+        self.assertEqual(post.state, "processing")
+        self.assertEqual(len(post.target_ids), 1)
