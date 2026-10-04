@@ -158,6 +158,7 @@ class AutomatifySocialPost(models.Model):
         """Serialize publication per post to avoid cron/manual duplicate writes."""
         self.ensure_one()
         self.check_access("write")
+        self.flush_recordset(["state"])
         self.env.cr.execute(
             "SELECT state FROM automatify_social_post WHERE id = %s FOR UPDATE",
             [self.id],
