@@ -105,6 +105,21 @@ class TestSocialPost(TransactionCase):
         post.action_schedule()
         self.assertEqual(post.state, "scheduled")
 
+    def test_scheduled_time_cannot_be_cleared_or_moved_to_past(self):
+        post = self._make_post()
+        post.scheduled_at = fields.Datetime.now() + timedelta(hours=1)
+        post.action_schedule()
+
+        with self.assertRaises(UserError):
+            post.write({"scheduled_at": False})
+        with self.assertRaises(UserError):
+            post.write({"scheduled_at": fields.Datetime.now() - timedelta(minutes=1)})
+
+        future_at = fields.Datetime.now() + timedelta(hours=2)
+        post.write({"scheduled_at": future_at})
+        self.assertEqual(post.state, "scheduled")
+        self.assertEqual(post.scheduled_at, future_at)
+
     def test_schedule_rechecks_locked_state_before_targets(self):
         post = self._make_post()
         post.scheduled_at = fields.Datetime.now() + timedelta(hours=1)
@@ -148,26 +163,20 @@ class TestSocialPost(TransactionCase):
         post.action_publish_now()
         self.assertFalse(post.scheduled_at)
 
-    def test_publish_now_locks_multi_post_recordsets_in_stable_order(self):
+    def test_publish_now_rejects_multi_post_recordsets_before_remote_effects(self):
         first = self._make_post()
         second = self._make_post()
         posts = self.env["automatify.social.post"].browse([second.id, first.id])
-        locked = []
 
-        def fake_lock(record):
-            record.ensure_one()
-            locked.append(record.id)
-            return "draft"
+        with patch.object(type(first), "_publish_pending_targets") as publish:
+            with self.assertRaises(UserError):
+                posts.action_publish_now()
 
-        def fake_publish(record):
-            return None
-
-        with patch.object(type(first), "_lock_for_publish", fake_lock), patch.object(
-            type(first), "_publish_pending_targets", fake_publish
-        ):
-            posts.action_publish_now()
-
-        self.assertEqual(locked, sorted([first.id, second.id]))
+        publish.assert_not_called()
+        self.assertEqual(first.state, "draft")
+        self.assertEqual(second.state, "draft")
+        self.assertEqual(first.target_ids.state, "pending")
+        self.assertEqual(second.target_ids.state, "pending")
 
     def test_missing_connector_becomes_actionable_failure(self):
         post = self._make_post()
@@ -341,7 +350,7 @@ class TestSocialPost(TransactionCase):
         target.invalidate_recordset(["state"])
         self.assertEqual(target.state, "unknown")
 
-    def test_retry_failed_locks_multi_post_recordsets_in_stable_order(self):
+    def test_retry_failed_rejects_multi_post_recordsets_before_remote_effects(self):
         first = self._make_post()
         second = self._make_post()
         for post in first | second:
@@ -355,22 +364,15 @@ class TestSocialPost(TransactionCase):
                 }
             )
         posts = self.env["automatify.social.post"].browse([second.id, first.id])
-        locked = []
 
-        def fake_lock(record):
-            record.ensure_one()
-            locked.append(record.id)
-            return "failed"
+        with patch.object(type(first), "_publish_pending_targets") as publish:
+            with self.assertRaises(UserError):
+                posts.action_retry_failed()
 
-        def fake_publish(record):
-            return None
-
-        with patch.object(type(first), "_lock_for_publish", fake_lock), patch.object(
-            type(first), "_publish_pending_targets", fake_publish
-        ):
-            posts.action_retry_failed()
-
-        self.assertEqual(locked, sorted([first.id, second.id]))
+        publish.assert_not_called()
+        for post in first | second:
+            self.assertEqual(post.state, "failed")
+            self.assertEqual(post.target_ids.state, "failed")
 
     def test_retry_recovers_remote_success_without_republishing(self):
         post = self._make_post()
