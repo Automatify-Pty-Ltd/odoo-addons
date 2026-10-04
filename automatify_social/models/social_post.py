@@ -366,5 +366,5 @@ class AutomatifySocialPostTarget(models.Model):
                 and target.post_id.company_id != target.account_id.company_id
             ):
                 raise ValidationError(
-                    _("The social account must belong to the same company as the post."))
+                    _("The social account must belong to the same company as the post.")
                 )
