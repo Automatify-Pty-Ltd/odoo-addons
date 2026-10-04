@@ -16,6 +16,7 @@ class AutomatifySocialPost(models.Model):
     _order = "scheduled_at desc, id desc"
 
     _WORKFLOW_MANAGED_FIELDS = frozenset({"state", "published_at", "failure_reason"})
+    _AUTHORING_FIELDS = frozenset({"message", "image_ids"})
 
     name = fields.Char(compute="_compute_name")
     message = fields.Html(
@@ -81,6 +82,24 @@ class AutomatifySocialPost(models.Model):
                 _("Publication status and result fields are managed by Social Publisher actions.")
             )
 
+    def _ensure_authoring_fields_allowed(self, vals):
+        if not self._AUTHORING_FIELDS.intersection(vals):
+            return
+        for post in self.sorted(key=lambda record: record.id):
+            state = post._lock_for_publish()
+            post.target_ids.invalidate_recordset(
+                ["state", "external_post_id", "external_url"]
+            )
+            remote_outcome = post.target_ids.filtered(
+                lambda target: target.state in ("published", "unknown")
+                or target.external_post_id
+                or target.external_url
+            )
+            if state in ("processing", "published") or remote_outcome:
+                raise UserError(
+                    _("Post content cannot be edited after publication has started.")
+                )
+
     @api.model_create_multi
     def create(self, vals_list):
         for vals in vals_list:
@@ -89,6 +108,7 @@ class AutomatifySocialPost(models.Model):
 
     def write(self, vals):
         self._ensure_workflow_fields_allowed(vals)
+        self._ensure_authoring_fields_allowed(vals)
         return super().write(vals)
 
     @api.depends("message")
@@ -259,6 +279,18 @@ class AutomatifySocialPost(models.Model):
 
     def action_retry_failed(self):
         for post in self:
+            state = post._lock_for_publish()
+            post.target_ids.invalidate_recordset(
+                [
+                    "state",
+                    "external_post_id",
+                    "external_url",
+                    "published_at",
+                    "error_message",
+                ]
+            )
+            if state != "failed":
+                raise UserError(_("Only failed posts can be retried."))
             if post._unknown_targets():
                 raise UserError(
                     _(
@@ -284,7 +316,8 @@ class AutomatifySocialPost(models.Model):
 
             retryable = failed - recovered
             retryable.sudo().write({"state": "pending", "error_message": False})
-            post.action_publish_now()
+            post.sudo().write({"state": "processing", "failure_reason": False})
+            post._publish_pending_targets()
         return True
 
     def action_cancel(self):
