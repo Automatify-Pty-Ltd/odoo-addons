@@ -206,7 +206,8 @@ class TestSocialPost(TransactionCase):
         with self.assertRaises(AccessError):
             target.with_user(social_user).write({"post_id": other_post.id})
 
-        target.with_user(social_user).write({"account_id": self.account.id})
+        with self.assertRaises(AccessError):
+            target.with_user(social_user).write({"account_id": self.account.id})
         self.assertEqual(target.state, "unknown")
 
     def test_cancel_and_reset(self):
