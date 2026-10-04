@@ -52,9 +52,10 @@ class AutomatifySocialPost(models.Model):
         required=True,
         index=True,
         tracking=True,
+        copy=False,
     )
-    scheduled_at = fields.Datetime(index=True, tracking=True)
-    published_at = fields.Datetime(readonly=True, tracking=True)
+    scheduled_at = fields.Datetime(index=True, tracking=True, copy=False)
+    published_at = fields.Datetime(readonly=True, tracking=True, copy=False)
     company_id = fields.Many2one(
         "res.company",
         required=True,
@@ -68,7 +69,7 @@ class AutomatifySocialPost(models.Model):
         string="Channels",
         copy=True,
     )
-    failure_reason = fields.Text(readonly=True)
+    failure_reason = fields.Text(readonly=True, copy=False)
 
     def _ensure_workflow_fields_allowed(self, vals):
         if self.env.su or self.env.user.has_group(
@@ -136,6 +137,7 @@ class AutomatifySocialPost(models.Model):
     def _lock_for_publish(self):
         """Serialize publication per post to avoid cron/manual duplicate writes."""
         self.ensure_one()
+        self.check_access("write")
         self.env.cr.execute(
             "SELECT state FROM automatify_social_post WHERE id = %s FOR UPDATE",
             [self.id],
@@ -377,11 +379,12 @@ class AutomatifySocialPostTarget(models.Model):
         default="pending",
         required=True,
         index=True,
+        copy=False,
     )
-    external_post_id = fields.Char(readonly=True)
-    external_url = fields.Char(readonly=True)
-    published_at = fields.Datetime(readonly=True)
-    error_message = fields.Text(readonly=True)
+    external_post_id = fields.Char(readonly=True, copy=False)
+    external_url = fields.Char(readonly=True, copy=False)
+    published_at = fields.Datetime(readonly=True, copy=False)
+    error_message = fields.Text(readonly=True, copy=False)
 
     _post_account_unique = models.Constraint(
         "unique(post_id, account_id)",
