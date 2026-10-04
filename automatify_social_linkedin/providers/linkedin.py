@@ -5,7 +5,11 @@ import requests
 from odoo import fields
 from odoo.exceptions import UserError
 
-from odoo.addons.automatify_social.providers.base import ProviderPublishResult, SocialProvider
+from odoo.addons.automatify_social.providers.base import (
+    AmbiguousPublishError,
+    ProviderPublishResult,
+    SocialProvider,
+)
 
 
 class LinkedInProvider(SocialProvider):
@@ -139,7 +143,10 @@ class LinkedInProvider(SocialProvider):
                 timeout=self.timeout,
             )
         except requests.RequestException as exc:
-            raise UserError(f"LinkedIn request failed: {exc}") from exc
+            raise AmbiguousPublishError(
+                "LinkedIn publication outcome is unknown because the response was lost. "
+                "Verify the post on LinkedIn before attempting any retry."
+            ) from exc
 
         if response.status_code != 201:
             detail = self._response_detail(response)
