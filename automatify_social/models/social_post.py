@@ -186,7 +186,7 @@ class AutomatifySocialPost(models.Model):
         return True
 
     def action_publish_now(self):
-        for post in self:
+        for post in self.sorted(key=lambda record: record.id):
             post._require_targets()
             state = post._lock_for_publish()
             if state in ("processing", "published", "cancelled"):
@@ -279,7 +279,7 @@ class AutomatifySocialPost(models.Model):
                 )
 
     def action_retry_failed(self):
-        for post in self:
+        for post in self.sorted(key=lambda record: record.id):
             state = post._lock_for_publish()
             post.target_ids.invalidate_recordset(
                 [
@@ -322,7 +322,7 @@ class AutomatifySocialPost(models.Model):
         return True
 
     def action_cancel(self):
-        for post in self:
+        for post in self.sorted(key=lambda record: record.id):
             state = post._lock_for_publish()
             if state in ("processing", "published"):
                 raise UserError(_("Processing or published posts cannot be cancelled."))
@@ -330,7 +330,7 @@ class AutomatifySocialPost(models.Model):
         return True
 
     def action_reset_to_draft(self):
-        for post in self:
+        for post in self.sorted(key=lambda record: record.id):
             state = post._lock_for_publish()
             if state in ("processing", "published"):
                 raise UserError(_("Processing or published posts cannot be reset to draft."))
@@ -358,6 +358,19 @@ class AutomatifySocialPost(models.Model):
             )
         return True
 
+    def _publish_scheduled_if_due(self):
+        self.ensure_one()
+        state = self._lock_for_publish()
+        self.invalidate_recordset(["scheduled_at"])
+        if (
+            state != "scheduled"
+            or not self.scheduled_at
+            or self.scheduled_at > fields.Datetime.now()
+        ):
+            return False
+        self.action_publish_now()
+        return True
+
     @api.model
     def _cron_publish_scheduled(self):
         due_posts = self.search(
@@ -365,13 +378,13 @@ class AutomatifySocialPost(models.Model):
                 ("state", "=", "scheduled"),
                 ("scheduled_at", "<=", fields.Datetime.now()),
             ],
-            order="scheduled_at asc",
+            order="scheduled_at asc, id asc",
             limit=50,
         )
         for post in due_posts:
             try:
                 with self.env.cr.savepoint():
-                    post.action_publish_now()
+                    post._publish_scheduled_if_due()
             except Exception:
                 _logger.exception("Scheduled social post %s failed", post.id)
         return True
@@ -438,6 +451,21 @@ class AutomatifySocialPostTarget(models.Model):
                 _("Publication status and remote-result fields are managed by Social Publisher.")
             )
 
+    def _ensure_parent_allows_target_creation(self, vals_list):
+        if self.env.su:
+            return
+        post_ids = sorted(
+            {vals.get("post_id") for vals in vals_list if vals.get("post_id")}
+        )
+        if not post_ids:
+            return
+        locked_states = {}
+        posts = self.env["automatify.social.post"].browse(post_ids)
+        for post in posts.sorted(key=lambda record: record.id):
+            locked_states[post.id] = post._lock_for_publish()
+        if any(locked_states[post_id] != "draft" for post_id in post_ids):
+            raise AccessError(_("Channels can only be added while the post is still in Draft."))
+
     def _ensure_account_change_allowed(self, vals):
         if "account_id" not in vals or self.env.su:
             return
@@ -458,6 +486,7 @@ class AutomatifySocialPostTarget(models.Model):
     def create(self, vals_list):
         for vals in vals_list:
             self._ensure_workflow_fields_allowed(vals, creating=True)
+        self._ensure_parent_allows_target_creation(vals_list)
         return super().create(vals_list)
 
     def write(self, vals):
