@@ -79,9 +79,15 @@ class TestLinkedInOAuth(TransactionCase):
         with self.assertRaises(AccessError):
             settings_model.default_get(["client_id", "client_secret", "callback_url"])
 
+        manager_user = new_test_user(
+            self.env,
+            login="linkedin-settings-manager",
+            email="linkedin-settings-manager@example.com",
+            groups="automatify_social.group_automatify_social_manager",
+        )
         settings = (
             self.env["automatify.social.linkedin.settings"]
-            .sudo()
+            .with_user(manager_user)
             .create({"client_id": "attacker-id", "client_secret": "attacker-secret"})
             .with_user(self.regular_user)
         )
