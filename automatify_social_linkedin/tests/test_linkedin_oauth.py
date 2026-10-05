@@ -1,5 +1,7 @@
+from datetime import timedelta
 from unittest.mock import Mock, patch
 
+from odoo import fields
 from odoo.exceptions import AccessError
 from odoo.tests.common import TransactionCase, new_test_user
 
@@ -154,3 +156,19 @@ class TestLinkedInOAuth(TransactionCase):
             params.get_param("automatify_social_linkedin.client_secret"),
             "original-secret",
         )
+
+    def test_oauth_state_is_locked_before_one_time_consumption(self):
+        state_model = self.env["automatify.social.linkedin.oauth.state"].sudo()
+        state_record = state_model.create(
+            {
+                "token": "linkedin-one-time-state",
+                "account_id": self.account.id,
+                "user_id": self.env.user.id,
+                "expires_at": fields.Datetime.now() + timedelta(minutes=10),
+            }
+        )
+
+        locked = state_model._lock_for_consume("linkedin-one-time-state")
+        self.assertEqual(locked, state_record)
+        locked.unlink()
+        self.assertFalse(state_model._lock_for_consume("linkedin-one-time-state"))
