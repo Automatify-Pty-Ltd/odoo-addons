@@ -1,6 +1,6 @@
 {
     "name": "Social Publisher",
-    "version": "19.0.1.1.0",
+    "version": "19.0.1.1.1",
     "summary": "Open social publishing core for Odoo Community",
     "author": "Automatify Pty Ltd",
     "website": "https://automatify.com.au",
@@ -17,6 +17,7 @@
         "data/social_cron.xml",
     ],
     "images": [
+        "static/description/banner.png",
         "static/description/01_compose_screenshot.png",
         "static/description/02_published_linkedin_x.png",
         "static/description/03_calendar_scheduling.png",
