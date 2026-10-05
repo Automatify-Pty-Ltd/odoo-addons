@@ -28,8 +28,9 @@
         <ul>
             <li>Three-legged LinkedIn OAuth Authorization Code flow.</li>
             <li>Personal Profile and Company Page author modes.</li>
-            <li>Current Personal Profile flow uses LinkedIn OpenID Connect plus Share on LinkedIn permissions.</li>
-            <li>Company Page eligibility validation through LinkedIn organization access APIs.</li>
+            <li>Personal Profiles use LinkedIn OpenID Connect plus Share on LinkedIn permissions.</li>
+            <li>Company Pages use the publishing-only <code>w_organization_social</code> permission and an explicit organization Author URN supplied by the manager.</li>
+            <li>Eligible Company Page publishing roles such as Content Admin do not require an administrator-only organization ACL scope.</li>
             <li>Provider-safe text publishing through the versioned LinkedIn Posts API.</li>
             <li>Single-image JPG, PNG, or GIF publishing through LinkedIn Images + Posts APIs.</li>
             <li>External post ID and LinkedIn link stored on the publication target.</li>
@@ -39,12 +40,18 @@
         <h3>Setup</h3>
         <ol>
             <li>Create or use your own LinkedIn Developer App.</li>
-            <li>For Personal Profile publishing, enable <strong>Share on LinkedIn</strong> and <strong>Sign In with LinkedIn using OpenID Connect</strong>. Company Page publishing requires the appropriate LinkedIn organization API access.</li>
+            <li>For Personal Profile publishing, enable <strong>Share on LinkedIn</strong> and <strong>Sign In with LinkedIn using OpenID Connect</strong>. Company Page publishing requires the LinkedIn organization publishing access needed for <code>w_organization_social</code>.</li>
             <li>Open <strong>Social Marketing &rarr; Configuration &rarr; LinkedIn Settings</strong>.</li>
             <li>Enter your own LinkedIn Client ID and Client Secret.</li>
             <li>Copy the OAuth Redirect URL displayed by Odoo into the exact Redirect URLs for your LinkedIn app.</li>
-            <li>Create a LinkedIn Social Account in Odoo and choose <strong>Connect LinkedIn</strong>.</li>
+            <li>Create a LinkedIn Social Account. For a Company Page, enter the exact Author URN such as <code>urn:li:organization:123456</code> before connecting.</li>
+            <li>Choose <strong>Connect LinkedIn</strong> and approve the requested permissions.</li>
         </ol>
+        <p>
+            Company Pages are not auto-discovered. After a Social Account is connected, its remote
+            profile or Page identity remains bound to that Odoo record; create another Social Account
+            to publish as a different identity.
+        </p>
         <p>
             The redirect URL is generated from the installation's standard Odoo <code>web.base.url</code>.
             No production callback URL, client credential, or OAuth token is bundled with this addon.
