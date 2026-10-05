@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_automatify_social_x_settings_form" model="ir.ui.view">
+        <field name="name">automatify.social.x.settings.form</field>
+        <field name="model">automatify.social.x.settings</field>
+        <field name="arch" type="xml">
+            <form string="X Settings">
+                <sheet>
+                    <group string="X Developer App">
+                        <field name="client_id"/>
+                        <field name="client_secret" password="True"/>
+                        <field name="callback_url" readonly="1"/>
+                    </group>
+                    <div class="text-muted">
+                        Enable OAuth 2.0 in the X Developer App and add the OAuth Redirect URL above as an exact callback URL.
+                    </div>
+                </sheet>
+                <footer>
+                    <button name="action_save" type="object" string="Save" class="btn-primary"/>
+                    <button string="Cancel" special="cancel" class="btn-secondary"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_automatify_social_x_settings" model="ir.actions.act_window">
+        <field name="name">X Settings</field>
+        <field name="res_model">automatify.social.x.settings</field>
+        <field name="view_mode">form</field>
+        <field name="view_id" ref="view_automatify_social_x_settings_form"/>
+        <field name="target">new</field>
+    </record>
+
+    <menuitem
+        id="menu_automatify_social_x_settings"
+        name="X Settings"
+        parent="automatify_social.menu_automatify_social_configuration"
+        action="action_automatify_social_x_settings"
+        sequence="30"
+        groups="automatify_social.group_automatify_social_manager"
+    />
+</odoo>

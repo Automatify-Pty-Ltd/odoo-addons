@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_automatify_social_post_list" model="ir.ui.view">
+        <field name="name">automatify.social.post.list</field>
+        <field name="model">automatify.social.post</field>
+        <field name="arch" type="xml">
+            <list string="Social Posts">
+                <field name="name" string="Message"/>
+                <field name="state"/>
+                <field name="scheduled_at"/>
+                <field name="published_at" optional="hide"/>
+                <field name="company_id" groups="base.group_multi_company"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_automatify_social_post_calendar" model="ir.ui.view">
+        <field name="name">automatify.social.post.calendar</field>
+        <field name="model">automatify.social.post</field>
+        <field name="arch" type="xml">
+            <calendar string="Social Calendar" date_start="scheduled_at" mode="month">
+                <field name="name"/>
+                <field name="state"/>
+            </calendar>
+        </field>
+    </record>
+
+    <record id="view_automatify_social_post_form" model="ir.ui.view">
+        <field name="name">automatify.social.post.form</field>
+        <field name="model">automatify.social.post</field>
+        <field name="arch" type="xml">
+            <form string="Social Post">
+                <header>
+                    <button name="action_publish_now" type="object" string="Post Now" class="btn-primary" invisible="state not in ('draft', 'scheduled', 'failed')"/>
+                    <button name="action_schedule" type="object" string="Schedule" invisible="state != 'draft'"/>
+                    <button name="action_retry_failed" type="object" string="Retry Failed" class="btn-primary" invisible="state != 'failed'"/>
+                    <button name="action_cancel" type="object" string="Cancel" invisible="state not in ('draft', 'scheduled', 'failed')"/>
+                    <button name="action_reset_to_draft" type="object" string="Reset to Draft" invisible="state not in ('scheduled', 'failed', 'cancelled')"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,scheduled,processing,published,failed"/>
+                </header>
+                <sheet>
+                    <group>
+                        <field name="company_id" groups="base.group_multi_company" readonly="state != 'draft'"/>
+                        <field name="scheduled_at"
+                               readonly="state not in ('draft', 'scheduled')"
+                               invisible="state not in ('draft', 'scheduled') and not scheduled_at"/>
+                        <field name="published_at" readonly="1" invisible="not published_at"/>
+                    </group>
+
+                    <group string="Post">
+                        <field name="message"
+                               widget="html"
+                               placeholder="What would you like to publish?"
+                               readonly="state in ('processing', 'published')"/>
+                    </group>
+
+                    <group string="Media">
+                        <field name="image_ids"
+                               widget="many2many_binary"
+                               options="{'accepted_file_extensions': 'image/*', 'number_of_files': 1}"
+                               readonly="state in ('processing', 'published')"/>
+                    </group>
+
+                    <notebook>
+                        <page string="Channels">
+                            <field name="target_ids" readonly="state in ('processing', 'published')">
+                                <list editable="bottom">
+                                    <field name="account_id" domain="[('company_id', '=', parent.company_id)]"/>
+                                    <field name="state" readonly="1"/>
+                                    <field name="external_post_id" readonly="1" optional="hide"/>
+                                    <field name="external_url" widget="url" readonly="1" optional="show" string="View on Network"/>
+                                    <field name="error_message" readonly="1" optional="show"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                    <group invisible="not failure_reason">
+                        <field name="failure_reason" readonly="1"/>
+                    </group>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_automatify_social_posts" model="ir.actions.act_window">
+        <field name="name">Social Posts</field>
+        <field name="res_model">automatify.social.post</field>
+        <field name="view_mode">list,form,calendar</field>
+    </record>
+
+    <record id="action_automatify_social_calendar" model="ir.actions.act_window">
+        <field name="name">Social Calendar</field>
+        <field name="res_model">automatify.social.post</field>
+        <field name="view_mode">calendar,list,form</field>
+    </record>
+</odoo>

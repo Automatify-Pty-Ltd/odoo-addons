@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_social_account_form_x" model="ir.ui.view">
+        <field name="name">automatify.social.account.form.x</field>
+        <field name="model">automatify.social.account</field>
+        <field name="inherit_id" ref="automatify_social.view_automatify_social_account_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//sheet/group[1]" position="after">
+                <group string="X" invisible="platform != 'x'">
+                    <group>
+                        <field name="x_token_expires_at" readonly="1"/>
+                    </group>
+                    <group>
+                        <button
+                            name="action_x_connect"
+                            type="object"
+                            string="Connect X"
+                            class="btn-primary"
+                            invisible="connection_state == 'connected'"
+                            groups="automatify_social.group_automatify_social_manager"
+                        />
+                        <button
+                            name="action_x_disconnect"
+                            type="object"
+                            string="Disconnect X"
+                            class="btn-secondary"
+                            invisible="connection_state != 'connected'"
+                            groups="automatify_social.group_automatify_social_manager"
+                        />
+                        <div class="text-muted">
+                            OAuth credentials are managed under Social Marketing → Configuration → X Settings.
+                        </div>
+                    </group>
+                </group>
+            </xpath>
+        </field>
+    </record>
+</odoo>
