@@ -1,0 +1,7 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_social_account_user,social.account.user,model_automatify_social_account,automatify_social.group_automatify_social_user,1,0,0,0
+access_social_account_manager,social.account.manager,model_automatify_social_account,automatify_social.group_automatify_social_manager,1,1,1,1
+access_social_post_user,social.post.user,model_automatify_social_post,automatify_social.group_automatify_social_user,1,1,1,0
+access_social_post_manager,social.post.manager,model_automatify_social_post,automatify_social.group_automatify_social_manager,1,1,1,1
+access_social_post_target_user,social.post.target.user,model_automatify_social_post_target,automatify_social.group_automatify_social_user,1,1,1,0
+access_social_post_target_manager,social.post.target.manager,model_automatify_social_post_target,automatify_social.group_automatify_social_manager,1,1,1,1

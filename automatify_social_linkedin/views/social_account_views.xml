@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_social_account_form_linkedin" model="ir.ui.view">
+        <field name="name">automatify.social.account.form.linkedin</field>
+        <field name="model">automatify.social.account</field>
+        <field name="inherit_id" ref="automatify_social.view_automatify_social_account_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//sheet/group[1]" position="after">
+                <group string="LinkedIn" invisible="platform != 'linkedin'">
+                    <group>
+                        <field name="linkedin_author_type"/>
+                        <field
+                            name="linkedin_author_urn"
+                            placeholder="urn:li:organization:123456"
+                            readonly="linkedin_author_type == 'member'"
+                        />
+                        <field name="linkedin_api_version"/>
+                        <field name="linkedin_token_expires_at" readonly="1"/>
+                    </group>
+                    <group>
+                        <button
+                            name="action_linkedin_connect"
+                            type="object"
+                            string="Connect LinkedIn"
+                            class="btn-primary"
+                            invisible="connection_state == 'connected'"
+                            groups="automatify_social.group_automatify_social_manager"
+                        />
+                        <button
+                            name="action_linkedin_disconnect"
+                            type="object"
+                            string="Disconnect LinkedIn"
+                            class="btn-secondary"
+                            invisible="connection_state != 'connected'"
+                            groups="automatify_social.group_automatify_social_manager"
+                        />
+                        <div class="text-muted">
+                            OAuth credentials are managed under Social Marketing → Configuration → LinkedIn Settings.
+                        </div>
+                    </group>
+                </group>
+            </xpath>
+        </field>
+    </record>
+</odoo>
