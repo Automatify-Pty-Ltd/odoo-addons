@@ -48,6 +48,33 @@ class AutomatifySocialAccount(models.Model):
         help="LinkedIn Marketing API version header in YYYYMM format.",
     )
 
+    def write(self, vals):
+        for account in self:
+            if not account.external_account_id:
+                continue
+            if (
+                "linkedin_author_urn" in vals
+                and (vals.get("linkedin_author_urn") or False)
+                != account.external_account_id
+            ):
+                raise UserError(
+                    _(
+                        "This LinkedIn social account is already bound to another author. "
+                        "Create a separate social account for a different profile or Company Page."
+                    )
+                )
+            if (
+                "linkedin_author_type" in vals
+                and vals.get("linkedin_author_type") != account.linkedin_author_type
+            ):
+                raise UserError(
+                    _(
+                        "The LinkedIn author type cannot be changed after the remote identity "
+                        "has been established. Create a separate social account instead."
+                    )
+                )
+        return super().write(vals)
+
     def _social_platform_selection(self):
         values = list(super()._social_platform_selection())
         if ("linkedin", "LinkedIn") not in values:
