@@ -99,3 +99,20 @@ class TestXOAuth(TransactionCase):
         self.assertEqual(self.account.x_access_token, "new-token")
         self.assertEqual(self.account.x_refresh_token, "new-refresh-token")
         self.assertEqual(self.account.connection_state, "connected")
+
+    def test_oauth_state_is_locked_before_one_time_consumption(self):
+        state_model = self.env["automatify.social.x.oauth.state"].sudo()
+        state_record = state_model.create(
+            {
+                "token": "x-one-time-state",
+                "code_verifier": "verifier",
+                "account_id": self.account.id,
+                "user_id": self.env.user.id,
+                "expires_at": fields.Datetime.now() + timedelta(minutes=10),
+            }
+        )
+
+        locked = state_model._lock_for_consume("x-one-time-state")
+        self.assertEqual(locked, state_record)
+        locked.unlink()
+        self.assertFalse(state_model._lock_for_consume("x-one-time-state"))
