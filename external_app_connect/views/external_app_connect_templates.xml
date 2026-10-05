@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="consent_page" name="External App Connection Consent">
+        <t t-call="web.login_layout">
+            <div class="oe_login_form">
+                <div class="card shadow-sm border-0">
+                    <div class="card-body p-4">
+                        <h3 class="mb-2">Connect <t t-out="client.name"/></h3>
+                        <p class="text-muted mb-3">
+                            This application is requesting access to your Odoo account. Review the permissions before continuing.
+                        </p>
+                        <div class="mb-3" t-if="client.website">
+                            <small class="text-muted">Application website</small>
+                            <div><t t-out="client.website"/></div>
+                        </div>
+                        <div class="mb-4">
+                            <strong>Requested permissions</strong>
+                            <ul class="mt-2 mb-0">
+                                <li t-foreach="requested_scopes" t-as="requested_scope">
+                                    <span class="fw-semibold" t-out="requested_scope.name"/>
+                                    <div class="small text-muted" t-if="requested_scope.description" t-out="requested_scope.description"/>
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <form method="post" action="/external-app/connect/authorize/decision" class="flex-grow-1 m-0">
+                                <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                                <input type="hidden" name="action" value="allow"/>
+                                <input type="hidden" name="response_type" t-att-value="response_type"/>
+                                <input type="hidden" name="client_id" t-att-value="client.client_id"/>
+                                <input type="hidden" name="redirect_uri" t-att-value="redirect_uri"/>
+                                <input type="hidden" name="scope" t-att-value="scope"/>
+                                <input type="hidden" name="state" t-att-value="state"/>
+                                <input type="hidden" name="code_challenge" t-att-value="code_challenge"/>
+                                <input type="hidden" name="code_challenge_method" t-att-value="code_challenge_method"/>
+                                <button type="submit" class="btn btn-primary w-100">Allow</button>
+                            </form>
+                            <form method="post" action="/external-app/connect/authorize/decision" class="flex-grow-1 m-0">
+                                <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                                <input type="hidden" name="action" value="deny"/>
+                                <input type="hidden" name="response_type" t-att-value="response_type"/>
+                                <input type="hidden" name="client_id" t-att-value="client.client_id"/>
+                                <input type="hidden" name="redirect_uri" t-att-value="redirect_uri"/>
+                                <input type="hidden" name="scope" t-att-value="scope"/>
+                                <input type="hidden" name="state" t-att-value="state"/>
+                                <input type="hidden" name="code_challenge" t-att-value="code_challenge"/>
+                                <input type="hidden" name="code_challenge_method" t-att-value="code_challenge_method"/>
+                                <button type="submit" class="btn btn-outline-secondary w-100">Cancel</button>
+                            </form>
+                        </div>
+                        <p class="small text-muted mt-3 mb-0">
+                            The application receives a short-lived authorization code. Your Odoo password is never shared.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </t>
+    </template>
+
+    <template id="authorization_error_page" name="External App Connection Error">
+        <t t-call="web.login_layout">
+            <div class="oe_login_form">
+                <div class="alert alert-danger" role="alert">
+                    <h4 class="alert-heading">Connection request rejected</h4>
+                    <p class="mb-0" t-out="error_message"/>
+                </div>
+            </div>
+        </t>
+    </template>
+</odoo>
