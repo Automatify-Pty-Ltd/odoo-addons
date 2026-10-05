@@ -246,15 +246,6 @@ class AutomatifySocialPost(models.Model):
                     # Elevate only the internal provider record so connector code can use
                     # manager-restricted OAuth token fields without exposing them to publishers.
                     result = provider.publish(account.sudo(), post)
-                    target.sudo().write(
-                        {
-                            "state": "published",
-                            "external_post_id": result.external_post_id or False,
-                            "external_url": result.external_url or False,
-                            "published_at": result.published_at or fields.Datetime.now(),
-                            "error_message": False,
-                        }
-                    )
                 except AmbiguousPublishError as exc:
                     _logger.warning(
                         "Social publish outcome unknown for post %s target %s: %s",
@@ -274,6 +265,43 @@ class AutomatifySocialPost(models.Model):
                     target.sudo().write(
                         {"state": "failed", "error_message": str(exc)}
                     )
+                else:
+                    try:
+                        with self.env.cr.savepoint():
+                            target.sudo().write(
+                                {
+                                    "state": "published",
+                                    "external_post_id": result.external_post_id or False,
+                                    "external_url": result.external_url or False,
+                                    "published_at": result.published_at or fields.Datetime.now(),
+                                    "error_message": False,
+                                }
+                            )
+                    except Exception as exc:
+                        remote_details = []
+                        if result.external_post_id:
+                            remote_details.append(
+                                f"remote id: {result.external_post_id}"
+                            )
+                        if result.external_url:
+                            remote_details.append(
+                                f"remote url: {result.external_url}"
+                            )
+                        detail = _(
+                            "Remote publication succeeded, but Odoo could not record the "
+                            "result. Verify the remote post before retrying."
+                        )
+                        if remote_details:
+                            detail = f"{detail} {'; '.join(remote_details)}"
+                        _logger.exception(
+                            "Social publish bookkeeping failed after remote success for post %s "
+                            "target %s",
+                            post.id,
+                            target.id,
+                        )
+                        target.sudo().write(
+                            {"state": "unknown", "error_message": detail}
+                        )
 
             unknown = post._unknown_targets()
             failed = post.target_ids.filtered(lambda target: target.state == "failed")
