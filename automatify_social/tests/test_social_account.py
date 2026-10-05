@@ -13,7 +13,7 @@ class TestSocialAccount(TransactionCase):
         with patch.object(
             type(account_model),
             "_social_platform_selection",
-            return_value=[("test", "Test Provider")],
+            return_value=[("test", "Test Provider"), ("other", "Other Provider")],
         ):
             self.account = account_model.create(
                 {
@@ -30,6 +30,12 @@ class TestSocialAccount(TransactionCase):
             self.account.write({"company_id": other_company.id})
 
         self.assertEqual(self.account.company_id, self.env.company)
+
+    def test_platform_is_immutable(self):
+        with self.assertRaises(UserError):
+            self.account.write({"platform": "other"})
+
+        self.assertEqual(self.account.platform, "test")
 
     def test_queued_post_cannot_be_rebound_by_moving_account(self):
         post = self.env["automatify.social.post"].create(
@@ -49,9 +55,35 @@ class TestSocialAccount(TransactionCase):
         self.assertEqual(post.target_ids.account_id, self.account)
         self.assertEqual(self.account.company_id, post.company_id)
 
-    def test_same_company_write_remains_allowed(self):
+    def test_duplicate_resets_connection_metadata(self):
+        now = fields.Datetime.now()
         self.account.write(
-            {"company_id": self.env.company.id, "name": "Renamed Social Account"}
+            {
+                "handle": "@original",
+                "external_account_id": "remote-account-123",
+                "connection_state": "connected",
+                "last_sync_at": now,
+                "last_error": "stale error",
+            }
+        )
+
+        duplicate = self.account.copy({"name": "Duplicated Social Account"})
+
+        self.assertEqual(duplicate.platform, self.account.platform)
+        self.assertEqual(duplicate.company_id, self.account.company_id)
+        self.assertEqual(duplicate.connection_state, "disconnected")
+        self.assertFalse(duplicate.handle)
+        self.assertFalse(duplicate.external_account_id)
+        self.assertFalse(duplicate.last_sync_at)
+        self.assertFalse(duplicate.last_error)
+
+    def test_same_identity_write_remains_allowed(self):
+        self.account.write(
+            {
+                "company_id": self.env.company.id,
+                "platform": self.account.platform,
+                "name": "Renamed Social Account",
+            }
         )
 
         self.assertEqual(self.account.name, "Renamed Social Account")
