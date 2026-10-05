@@ -1,6 +1,6 @@
 {
     "name": "Social Publisher LinkedIn",
-    "version": "19.0.1.2.0",
+    "version": "19.0.1.2.1",
     "summary": "LinkedIn connector for Social Publisher",
     "author": "Automatify Pty Ltd",
     "website": "https://automatify.com.au",
@@ -15,6 +15,7 @@
         "views/linkedin_settings_views.xml",
     ],
     "images": [
+        "static/description/banner.png",
         "static/description/01_compose_screenshot.png",
         "static/description/02_published_linkedin_x.png",
         "static/description/03_calendar_scheduling.png",
