@@ -22,20 +22,32 @@
                                 </li>
                             </ul>
                         </div>
-                        <form method="post" action="/external-app/connect/authorize/decision">
-                            <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
-                            <input type="hidden" name="response_type" t-att-value="response_type"/>
-                            <input type="hidden" name="client_id" t-att-value="client.client_id"/>
-                            <input type="hidden" name="redirect_uri" t-att-value="redirect_uri"/>
-                            <input type="hidden" name="scope" t-att-value="scope"/>
-                            <input type="hidden" name="state" t-att-value="state"/>
-                            <input type="hidden" name="code_challenge" t-att-value="code_challenge"/>
-                            <input type="hidden" name="code_challenge_method" t-att-value="code_challenge_method"/>
-                            <div class="d-flex gap-2">
-                                <button type="submit" name="action" value="allow" class="btn btn-primary flex-grow-1">Allow</button>
-                                <button type="submit" name="action" value="deny" class="btn btn-outline-secondary flex-grow-1">Cancel</button>
-                            </div>
-                        </form>
+                        <div class="d-flex gap-2">
+                            <form method="post" action="/external-app/connect/authorize/decision" class="flex-grow-1 m-0">
+                                <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                                <input type="hidden" name="action" value="allow"/>
+                                <input type="hidden" name="response_type" t-att-value="response_type"/>
+                                <input type="hidden" name="client_id" t-att-value="client.client_id"/>
+                                <input type="hidden" name="redirect_uri" t-att-value="redirect_uri"/>
+                                <input type="hidden" name="scope" t-att-value="scope"/>
+                                <input type="hidden" name="state" t-att-value="state"/>
+                                <input type="hidden" name="code_challenge" t-att-value="code_challenge"/>
+                                <input type="hidden" name="code_challenge_method" t-att-value="code_challenge_method"/>
+                                <button type="submit" class="btn btn-primary w-100">Allow</button>
+                            </form>
+                            <form method="post" action="/external-app/connect/authorize/decision" class="flex-grow-1 m-0">
+                                <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                                <input type="hidden" name="action" value="deny"/>
+                                <input type="hidden" name="response_type" t-att-value="response_type"/>
+                                <input type="hidden" name="client_id" t-att-value="client.client_id"/>
+                                <input type="hidden" name="redirect_uri" t-att-value="redirect_uri"/>
+                                <input type="hidden" name="scope" t-att-value="scope"/>
+                                <input type="hidden" name="state" t-att-value="state"/>
+                                <input type="hidden" name="code_challenge" t-att-value="code_challenge"/>
+                                <input type="hidden" name="code_challenge_method" t-att-value="code_challenge_method"/>
+                                <button type="submit" class="btn btn-outline-secondary w-100">Cancel</button>
+                            </form>
+                        </div>
                         <p class="small text-muted mt-3 mb-0">
                             The application receives a short-lived authorization code. Your Odoo password is never shared.
                         </p>
