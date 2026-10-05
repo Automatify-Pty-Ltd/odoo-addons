@@ -108,7 +108,13 @@ class TestXOAuth(TransactionCase):
                 "connection_state": "connected",
             }
         )
-        self.account.action_x_disconnect()
+        manager_user = new_test_user(
+            self.env,
+            login="x-reconnect-manager",
+            email="x-reconnect-manager@example.com",
+            groups="automatify_social.group_automatify_social_manager",
+        )
+        self.account.with_user(manager_user).action_x_disconnect()
 
         self.assertEqual(self.account.external_account_id, "111")
         self.assertEqual(self.account.connection_state, "disconnected")
