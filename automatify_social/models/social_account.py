@@ -46,6 +46,19 @@ class AutomatifySocialAccount(models.Model):
     last_sync_at = fields.Datetime(readonly=True, copy=False)
     last_error = fields.Text(readonly=True, copy=False)
 
+    def _ensure_remote_identity_matches(self, remote_identity):
+        self.ensure_one()
+        remote_identity = remote_identity or False
+        if self.external_account_id and self.external_account_id != remote_identity:
+            raise UserError(
+                _(
+                    "This social account is already bound to a different remote identity. "
+                    "Create a separate social account instead of reconnecting it to another "
+                    "public profile or page."
+                )
+            )
+        return True
+
     def write(self, vals):
         if "company_id" in vals:
             new_company_id = vals.get("company_id")
@@ -70,14 +83,7 @@ class AutomatifySocialAccount(models.Model):
         if "external_account_id" in vals:
             new_external_id = vals.get("external_account_id") or False
             for account in self:
-                if account.external_account_id and account.external_account_id != new_external_id:
-                    raise UserError(
-                        _(
-                            "This social account is already bound to a different remote identity. "
-                            "Create a separate social account instead of reconnecting it to another "
-                            "public profile or page."
-                        )
-                    )
+                account._ensure_remote_identity_matches(new_external_id)
         return super().write(vals)
 
     def _social_platform_selection(self):
