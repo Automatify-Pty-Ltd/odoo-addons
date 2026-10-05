@@ -2,7 +2,7 @@ from datetime import timedelta
 from unittest.mock import Mock, patch
 
 from odoo import fields
-from odoo.exceptions import AccessError
+from odoo.exceptions import AccessError, UserError
 from odoo.tests.common import TransactionCase, new_test_user
 
 
@@ -99,6 +99,22 @@ class TestXOAuth(TransactionCase):
         self.assertEqual(self.account.x_access_token, "new-token")
         self.assertEqual(self.account.x_refresh_token, "new-refresh-token")
         self.assertEqual(self.account.connection_state, "connected")
+
+    def test_reconnect_cannot_rebind_existing_remote_identity(self):
+        self.account.write(
+            {
+                "external_account_id": "111",
+                "handle": "@original",
+                "connection_state": "connected",
+            }
+        )
+        self.account.action_x_disconnect()
+
+        self.assertEqual(self.account.external_account_id, "111")
+        self.assertEqual(self.account.connection_state, "disconnected")
+        with self.assertRaises(UserError):
+            self.account._ensure_remote_identity_matches("222")
+        self.assertEqual(self.account.external_account_id, "111")
 
     def test_oauth_state_is_locked_before_one_time_consumption(self):
         state_model = self.env["automatify.social.x.oauth.state"].sudo()
