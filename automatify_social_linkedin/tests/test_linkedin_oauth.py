@@ -81,6 +81,33 @@ class TestLinkedInOAuth(TransactionCase):
         with self.assertRaises(UserError):
             self.account._validate_linkedin_organization_urn()
 
+    def test_reconnect_cannot_rebind_existing_linkedin_author(self):
+        original_urn = "urn:li:organization:111"
+        self.account.write(
+            {
+                "linkedin_author_urn": original_urn,
+                "external_account_id": original_urn,
+                "connection_state": "connected",
+            }
+        )
+        manager = new_test_user(
+            self.env,
+            login="linkedin-reconnect-manager",
+            groups="automatify_social.group_automatify_social_manager",
+        )
+        self.account.with_user(manager).action_linkedin_disconnect()
+
+        self.account.invalidate_recordset(
+            ["external_account_id", "linkedin_author_urn", "connection_state"]
+        )
+        self.assertEqual(self.account.external_account_id, original_urn)
+        self.assertEqual(self.account.linkedin_author_urn, original_urn)
+        self.assertEqual(self.account.connection_state, "disconnected")
+        with self.assertRaises(UserError):
+            self.account.write({"linkedin_author_urn": "urn:li:organization:222"})
+        with self.assertRaises(UserError):
+            self.account._ensure_remote_identity_matches("urn:li:organization:222")
+
     def test_redirect_uri_uses_odoo_base_url(self):
         self.env["ir.config_parameter"].sudo().set_param(
             "web.base.url", "https://odoo.example.com/"
