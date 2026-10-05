@@ -37,6 +37,19 @@ class TestSocialAccount(TransactionCase):
 
         self.assertEqual(self.account.platform, "test")
 
+    def test_remote_identity_is_immutable_after_first_binding(self):
+        self.account.write({"external_account_id": "remote-account-123"})
+
+        self.account._ensure_remote_identity_matches("remote-account-123")
+        with self.assertRaises(UserError):
+            self.account._ensure_remote_identity_matches("remote-account-456")
+        with self.assertRaises(UserError):
+            self.account.write({"external_account_id": "remote-account-456"})
+        with self.assertRaises(UserError):
+            self.account.write({"external_account_id": False})
+
+        self.assertEqual(self.account.external_account_id, "remote-account-123")
+
     def test_queued_post_cannot_be_rebound_by_moving_account(self):
         post = self.env["automatify.social.post"].create(
             {
