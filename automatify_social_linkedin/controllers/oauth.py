@@ -3,6 +3,7 @@ from datetime import timedelta
 import requests
 
 from odoo import fields, http
+from odoo.exceptions import UserError
 from odoo.http import request
 
 
@@ -144,7 +145,7 @@ class AutomatifySocialLinkedInOAuthController(http.Controller):
             if display_name:
                 values["handle"] = display_name
             account.write(values)
-        except (requests.RequestException, ValueError, TypeError) as exc:
+        except (requests.RequestException, UserError, ValueError, TypeError) as exc:
             return self._fail(account, str(exc))
 
         return request.redirect(self._account_url(account))
