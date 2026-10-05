@@ -1,4 +1,5 @@
 from datetime import timedelta
+import time
 
 import requests
 
@@ -17,6 +18,9 @@ class LinkedInProvider(SocialProvider):
     label = "LinkedIn"
     endpoint = "https://api.linkedin.com/rest/posts"
     image_initialize_endpoint = "https://api.linkedin.com/rest/images?action=initializeUpload"
+    image_status_endpoint = "https://api.linkedin.com/rest/images/{image_urn}"
+    image_poll_attempts = 10
+    image_poll_interval = 1
     timeout = 20
 
     @staticmethod
@@ -31,6 +35,64 @@ class LinkedInProvider(SocialProvider):
     @staticmethod
     def _response_detail(response):
         return (response.text or "")[:1000]
+
+    def _wait_for_image_available(self, account, image_urn, token, version):
+        headers = self._headers(token, version)
+        endpoint = self.image_status_endpoint.format(image_urn=image_urn)
+
+        for attempt in range(self.image_poll_attempts):
+            try:
+                response = requests.get(
+                    endpoint,
+                    headers=headers,
+                    timeout=self.timeout,
+                )
+            except requests.RequestException as exc:
+                raise UserError(f"LinkedIn image status check failed: {exc}") from exc
+
+            if response.status_code >= 500:
+                if attempt + 1 < self.image_poll_attempts:
+                    time.sleep(self.image_poll_interval)
+                    continue
+                raise UserError(
+                    "LinkedIn image processing could not be confirmed because LinkedIn "
+                    "kept returning server errors. Try publishing again later."
+                )
+
+            if response.status_code != 200:
+                message = (
+                    f"LinkedIn rejected image status lookup ({response.status_code}): "
+                    f"{self._response_detail(response)}"
+                )
+                if response.status_code in (401, 403):
+                    account.write({"connection_state": "error", "last_error": message})
+                raise UserError(message)
+
+            try:
+                status = (response.json() or {}).get("status")
+            except (ValueError, TypeError) as exc:
+                raise UserError(
+                    "LinkedIn image status response could not be read safely."
+                ) from exc
+
+            if status == "AVAILABLE":
+                return
+            if status == "PROCESSING_FAILED":
+                raise UserError(
+                    "LinkedIn could not process the uploaded image. Check the image format and "
+                    "dimensions, then try again."
+                )
+            if status not in ("WAITING_UPLOAD", "PROCESSING"):
+                raise UserError(
+                    f"LinkedIn returned unexpected image processing status: {status or 'empty'}."
+                )
+
+            if attempt + 1 < self.image_poll_attempts:
+                time.sleep(self.image_poll_interval)
+
+        raise UserError(
+            "LinkedIn image is still processing. Try publishing again after processing completes."
+        )
 
     def _upload_image(self, account, attachment, token, author, version):
         allowed_types = {"image/jpeg", "image/png", "image/gif"}
@@ -87,6 +149,8 @@ class LinkedInProvider(SocialProvider):
                 f"LinkedIn rejected image upload ({uploaded.status_code}): "
                 f"{self._response_detail(uploaded)}"
             )
+
+        self._wait_for_image_available(account, image_urn, token, version)
         return image_urn
 
     def publish(self, account, post):
