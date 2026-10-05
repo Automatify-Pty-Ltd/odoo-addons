@@ -3,6 +3,7 @@ from datetime import timedelta
 import requests
 
 from odoo import fields, http
+from odoo.exceptions import UserError
 from odoo.http import request
 
 
@@ -109,6 +110,7 @@ class AutomatifySocialXOAuthController(http.Controller):
             token_payload = self._exchange_code(account, code, code_verifier)
             token = token_payload["access_token"]
             user = self._resolve_user(token)
+            account._ensure_remote_identity_matches(user["id"])
             expires_in = int(token_payload.get("expires_in") or 0)
             account.write(
                 {
@@ -126,7 +128,7 @@ class AutomatifySocialXOAuthController(http.Controller):
                     "last_sync_at": fields.Datetime.now(),
                 }
             )
-        except (requests.RequestException, ValueError, TypeError) as exc:
+        except (requests.RequestException, UserError, ValueError, TypeError) as exc:
             return self._fail(account, str(exc))
 
         return request.redirect(self._account_url(account))
