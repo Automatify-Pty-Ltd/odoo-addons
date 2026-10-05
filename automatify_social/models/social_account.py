@@ -14,9 +14,13 @@ class AutomatifySocialAccount(models.Model):
         index=True,
         help="Social network provider registered by an installed connector addon.",
     )
-    handle = fields.Char(help="Human-readable page, profile, or account handle.")
+    handle = fields.Char(
+        copy=False,
+        help="Human-readable page, profile, or account handle.",
+    )
     external_account_id = fields.Char(
         string="External Account ID",
+        copy=False,
         help="Provider-side account/page identifier. Credentials live in connector addons.",
     )
     active = fields.Boolean(default=True)
@@ -37,9 +41,10 @@ class AutomatifySocialAccount(models.Model):
         default="disconnected",
         required=True,
         readonly=True,
+        copy=False,
     )
-    last_sync_at = fields.Datetime(readonly=True)
-    last_error = fields.Text(readonly=True)
+    last_sync_at = fields.Datetime(readonly=True, copy=False)
+    last_error = fields.Text(readonly=True, copy=False)
 
     def write(self, vals):
         if "company_id" in vals:
@@ -50,6 +55,16 @@ class AutomatifySocialAccount(models.Model):
                         "A social account cannot be moved to another company. "
                         "Create a separate social account for the other company so queued and "
                         "historical publications remain bound to their original company."
+                    )
+                )
+        if "platform" in vals:
+            new_platform = vals.get("platform")
+            if any(account.platform != new_platform for account in self):
+                raise UserError(
+                    _(
+                        "A social account's platform cannot be changed after creation. "
+                        "Create a separate social account for the other network so queued and "
+                        "historical publications remain bound to their original provider."
                     )
                 )
         return super().write(vals)
