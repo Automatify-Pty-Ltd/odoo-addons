@@ -126,6 +126,7 @@ class AutomatifySocialLinkedInOAuthController(http.Controller):
             else:
                 author_urn, display_name = self._resolve_organization(account, token)
 
+            account._ensure_remote_identity_matches(author_urn)
             expires_in = int(token_payload.get("expires_in") or 0)
             expires_at = (
                 fields.Datetime.now() + timedelta(seconds=expires_in)
