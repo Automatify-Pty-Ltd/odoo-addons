@@ -18,3 +18,17 @@ class AutomatifySocialXOAuthState(models.Model):
         "unique(token)",
         "OAuth state must be unique.",
     )
+
+    def _lock_for_consume(self, token):
+        """Lock a one-time OAuth state row so only one callback can consume it."""
+        self.flush_model(["token"])
+        self.env.cr.execute(
+            f"SELECT id FROM {self._table} WHERE token = %s FOR UPDATE",
+            [token],
+        )
+        row = self.env.cr.fetchone()
+        if not row:
+            return self.browse()
+        state_record = self.browse(row[0])
+        state_record.invalidate_recordset()
+        return state_record
