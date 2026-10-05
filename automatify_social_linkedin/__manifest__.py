@@ -1,6 +1,6 @@
 {
     "name": "Social Publisher LinkedIn",
-    "version": "19.0.1.2.1",
+    "version": "19.0.1.2.2",
     "summary": "LinkedIn connector for Social Publisher",
     "author": "Automatify Pty Ltd",
     "website": "https://automatify.com.au",
