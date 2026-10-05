@@ -67,6 +67,17 @@ class AutomatifySocialAccount(models.Model):
                         "historical publications remain bound to their original provider."
                     )
                 )
+        if "external_account_id" in vals:
+            new_external_id = vals.get("external_account_id") or False
+            for account in self:
+                if account.external_account_id and account.external_account_id != new_external_id:
+                    raise UserError(
+                        _(
+                            "This social account is already bound to a different remote identity. "
+                            "Create a separate social account instead of reconnecting it to another "
+                            "public profile or page."
+                        )
+                    )
         return super().write(vals)
 
     def _social_platform_selection(self):
