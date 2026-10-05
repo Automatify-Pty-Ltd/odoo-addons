@@ -4,6 +4,7 @@ from odoo import fields
 from odoo.exceptions import UserError, ValidationError
 from odoo.tests.common import TransactionCase
 
+from odoo.addons.automatify_social.models.social_post import AutomatifySocialPost
 from odoo.addons.automatify_social.providers.base import ProviderPublishResult
 
 
@@ -56,6 +57,40 @@ class TestPublishBookkeeping(TransactionCase):
         self.assertEqual(target.state, "unknown")
         self.assertIn("Remote publication succeeded", target.error_message)
         self.assertIn("remote-456", target.error_message)
+
+        with self.assertRaises(UserError):
+            self.post.action_retry_failed()
+        self.assertEqual(provider.publish.call_count, 1)
+
+    def test_parent_finalization_failure_preserves_remote_success(self):
+        provider = Mock()
+        provider.publish.return_value = ProviderPublishResult(
+            external_post_id="remote-789",
+            external_url="https://example.test/status/remote-789",
+            published_at=fields.Datetime.now(),
+        )
+        target = self.post.target_ids
+        original_workflow_write = AutomatifySocialPost._write_workflow_values
+
+        def reject_parent_published(recordset, vals):
+            if vals.get("state") == "published":
+                raise ValidationError("Installed extension rejected parent publication")
+            return original_workflow_write(recordset, vals)
+
+        with patch.object(
+            type(self.account), "_get_social_provider", return_value=provider
+        ), patch.object(
+            AutomatifySocialPost,
+            "_write_workflow_values",
+            reject_parent_published,
+        ):
+            self.post.action_publish_now()
+
+        self.assertEqual(provider.publish.call_count, 1)
+        self.assertEqual(target.state, "published")
+        self.assertEqual(target.external_post_id, "remote-789")
+        self.assertEqual(self.post.state, "failed")
+        self.assertIn("could not finalize", self.post.failure_reason)
 
         with self.assertRaises(UserError):
             self.post.action_retry_failed()
