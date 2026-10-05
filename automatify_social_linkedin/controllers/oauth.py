@@ -177,11 +177,8 @@ class AutomatifySocialLinkedInOAuthController(http.Controller):
         if not state:
             return request.make_response("Missing LinkedIn OAuth state.", status=400)
 
-        state_record = (
-            request.env["automatify.social.linkedin.oauth.state"]
-            .sudo()
-            .search([("token", "=", state)], limit=1)
-        )
+        state_model = request.env["automatify.social.linkedin.oauth.state"].sudo()
+        state_record = state_model._lock_for_consume(state)
         if not state_record:
             return request.make_response("Invalid LinkedIn OAuth state.", status=400)
         if state_record.user_id.id != request.env.user.id:
