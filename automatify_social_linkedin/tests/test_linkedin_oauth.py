@@ -2,7 +2,7 @@ from datetime import timedelta
 from unittest.mock import Mock, patch
 
 from odoo import fields
-from odoo.exceptions import AccessError
+from odoo.exceptions import AccessError, UserError
 from odoo.tests.common import TransactionCase, new_test_user
 
 from odoo.addons.automatify_social_linkedin.controllers.oauth import (
@@ -27,10 +27,10 @@ class TestLinkedInOAuth(TransactionCase):
             groups="base.group_user",
         )
 
-    def test_organization_scopes(self):
+    def test_organization_scopes_use_publishing_permission_only(self):
         self.assertEqual(
             self.account._linkedin_oauth_scopes(),
-            ["rw_organization_admin", "w_organization_social"],
+            ["w_organization_social"],
         )
 
     def test_member_scopes_use_oidc_and_share_permission(self):
@@ -59,41 +59,13 @@ class TestLinkedInOAuth(TransactionCase):
             get_request.call_args.args[0], "https://api.linkedin.com/v2/userinfo"
         )
 
-    def test_organization_identity_traverses_acl_pages(self):
+    def test_configured_organization_identity_requires_no_admin_acl_lookup(self):
         controller = AutomatifySocialLinkedInOAuthController()
         configured_urn = "urn:li:organization:222"
         self.account.linkedin_author_urn = configured_urn
 
-        first_response = Mock(status_code=200, text="")
-        first_response.json.return_value = {
-            "elements": [
-                {
-                    "state": "APPROVED",
-                    "role": "ADMINISTRATOR",
-                    "organization": "urn:li:organization:111",
-                }
-            ],
-            "paging": {
-                "start": 0,
-                "count": 1,
-                "links": [{"rel": "next", "href": "/rest/organizationAcls?start=1"}],
-            },
-        }
-        second_response = Mock(status_code=200, text="")
-        second_response.json.return_value = {
-            "elements": [
-                {
-                    "state": "APPROVED",
-                    "role": "CONTENT_ADMIN",
-                    "organizationTarget": configured_urn,
-                }
-            ],
-            "paging": {"start": 1, "count": 1, "links": []},
-        }
-
         with patch(
-            "odoo.addons.automatify_social_linkedin.controllers.oauth.requests.get",
-            side_effect=[first_response, second_response],
+            "odoo.addons.automatify_social_linkedin.controllers.oauth.requests.get"
         ) as get_request:
             author_urn, display_name = controller._resolve_organization(
                 self.account, "test-token"
@@ -101,16 +73,13 @@ class TestLinkedInOAuth(TransactionCase):
 
         self.assertEqual(author_urn, configured_urn)
         self.assertIsNone(display_name)
-        self.assertEqual(get_request.call_count, 2)
-        self.assertEqual(
-            get_request.call_args_list[1].kwargs["params"],
-            {
-                "q": "roleAssignee",
-                "state": "APPROVED",
-                "start": 1,
-                "count": 1,
-            },
-        )
+        get_request.assert_not_called()
+
+    def test_company_page_requires_valid_author_urn(self):
+        self.account.linkedin_author_urn = "not-an-organization-urn"
+
+        with self.assertRaises(UserError):
+            self.account._validate_linkedin_organization_urn()
 
     def test_redirect_uri_uses_odoo_base_url(self):
         self.env["ir.config_parameter"].sudo().set_param(
