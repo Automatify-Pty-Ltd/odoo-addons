@@ -35,7 +35,12 @@ class AutomatifySocialAccount(models.Model):
     )
     linkedin_author_urn = fields.Char(
         string="LinkedIn Author URN",
-        help="Resolved person or organization URN used as the post author.",
+        copy=False,
+        help=(
+            "For Company Pages, enter the organization URN (for example "
+            "urn:li:organization:123456). This lets Odoo request only the publishing "
+            "permission, including for eligible LinkedIn Content Admins."
+        ),
     )
     linkedin_api_version = fields.Char(
         string="LinkedIn API Version",
@@ -65,7 +70,20 @@ class AutomatifySocialAccount(models.Model):
         self.ensure_one()
         if self.linkedin_author_type == "member":
             return ["openid", "profile", "w_member_social"]
-        return ["rw_organization_admin", "w_organization_social"]
+        return ["w_organization_social"]
+
+    def _validate_linkedin_organization_urn(self):
+        self.ensure_one()
+        author_urn = (self.linkedin_author_urn or "").strip()
+        prefix = "urn:li:organization:"
+        if not author_urn.startswith(prefix) or not author_urn[len(prefix) :].isdigit():
+            raise UserError(
+                _(
+                    "Enter the LinkedIn Company Page Author URN before connecting, for example "
+                    "urn:li:organization:123456."
+                )
+            )
+        return author_urn
 
     def action_linkedin_connect(self):
         self.ensure_one()
@@ -75,6 +93,8 @@ class AutomatifySocialAccount(models.Model):
             raise AccessError(_("Only Social Marketing Managers can connect LinkedIn."))
         if self.platform != "linkedin":
             raise UserError(_("This action is only available for LinkedIn accounts."))
+        if self.linkedin_author_type == "organization":
+            self._validate_linkedin_organization_urn()
 
         params = self.env["ir.config_parameter"].sudo()
         client_id = params.get_param("automatify_social_linkedin.client_id")
