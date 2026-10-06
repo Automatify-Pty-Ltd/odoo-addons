@@ -17,3 +17,11 @@ class TestKnowledgeMarkdownPage(TransactionCase):
 
         with self.assertRaises(ValidationError):
             category.write({"page_type": "content"})
+
+    def test_category_cannot_receive_content(self):
+        category = self.env["knowledge.markdown.page"].create(
+            {"name": "Category", "page_type": "category"}
+        )
+
+        with self.assertRaises(ValidationError):
+            category.write({"content": "<p>Not allowed</p>"})
