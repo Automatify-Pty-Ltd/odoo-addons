@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_social_post_form_markdown" model="ir.ui.view">
+        <field name="name">automatify.social.post.form.markdown</field>
+        <field name="model">automatify.social.post</field>
+        <field name="inherit_id" ref="automatify_social.view_automatify_social_post_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='message']" position="before">
+                <button
+                    name="action_open_markdown_import"
+                    type="object"
+                    string="Import Markdown"
+                    class="btn-secondary"
+                    icon="fa-upload"
+                    invisible="state in ('processing', 'published')"
+                />
+            </xpath>
+        </field>
+    </record>
+
+    <menuitem
+        id="menu_social_markdown_import_new"
+        name="New from Markdown"
+        parent="automatify_social.menu_automatify_social_root"
+        action="automatify_social_markdown.action_social_markdown_import_new"
+        sequence="15"
+        groups="automatify_social.group_automatify_social_user"
+    />
+</odoo>

@@ -4,7 +4,7 @@ from odoo.exceptions import AccessError
 from odoo.http import Controller, content_disposition, request, route
 from odoo.tools import osutil
 
-from ..services import html_to_markdown
+from odoo.addons.automatify_markdown.services import html_to_markdown
 
 
 class KnowledgeMarkdownController(Controller):
@@ -15,8 +15,8 @@ class KnowledgeMarkdownController(Controller):
         methods=["GET"],
     )
     def export_markdown(self, page_id, **kwargs):
-        page = request.env["document.page"].browse(page_id).exists()
-        if not page or page.type != "content":
+        page = request.env["knowledge.markdown.page"].browse(page_id).exists()
+        if not page or page.page_type != "content":
             raise NotFound()
 
         try:

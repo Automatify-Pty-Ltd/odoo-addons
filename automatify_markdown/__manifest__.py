@@ -1,0 +1,15 @@
+{
+    "name": "Markdown Core",
+    "version": "19.0.1.0.0",
+    "summary": "Reusable Markdown import, export, validation, and sanitization services",
+    "category": "Technical",
+    "author": "Automatify Pty Ltd",
+    "website": "https://github.com/Automatify-Pty-Ltd/odoo-addons",
+    "support": "admin@automatify.com.au",
+    "license": "LGPL-3",
+    "depends": ["base"],
+    "external_dependencies": {"python": ["markdown"]},
+    "installable": True,
+    "auto_install": False,
+    "application": False,
+}

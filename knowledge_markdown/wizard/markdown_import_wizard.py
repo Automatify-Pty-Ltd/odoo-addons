@@ -1,15 +1,11 @@
-import base64
-import binascii
 import os
 import re
 
 from odoo import _, fields, models
 from odoo.exceptions import UserError
 
-from ..services import markdown_to_html
+from odoo.addons.automatify_markdown.services import decode_markdown_file, markdown_to_html
 
-
-MAX_MARKDOWN_BYTES = 2 * 1024 * 1024
 _ATX_H1_RE = re.compile(r"(?m)^\s*#\s+(.+?)\s*#*\s*$")
 _INLINE_MARKUP_RE = re.compile(r"[*_`~]+")
 
@@ -25,14 +21,14 @@ class MarkdownImportWizard(models.TransientModel):
         readonly=True,
     )
     page_id = fields.Many2one(
-        "document.page",
+        "knowledge.markdown.page",
         readonly=True,
-        domain=[("type", "=", "content")],
+        domain=[("page_type", "=", "content")],
     )
     parent_id = fields.Many2one(
-        "document.page",
+        "knowledge.markdown.page",
         string="Category",
-        domain=[("type", "=", "category")],
+        domain=[("page_type", "=", "category")],
     )
     page_name = fields.Char(
         string="Title",
@@ -45,7 +41,7 @@ class MarkdownImportWizard(models.TransientModel):
 
     def action_import(self):
         self.ensure_one()
-        source, filename = self._decode_markdown_file()
+        source, filename = decode_markdown_file(self.markdown_file, self.filename)
         converted = markdown_to_html(source)
         summary = self.revision_summary or _("Imported from %s", filename)
 
@@ -57,69 +53,37 @@ class MarkdownImportWizard(models.TransientModel):
 
     def _import_into_existing(self, converted, summary):
         page = self.page_id.exists()
-        if not page or page.type != "content":
+        if not page or page.page_type != "content":
             raise UserError(_("The target Knowledge page no longer exists."))
         page.check_access("write")
-        page._create_history(
-            {
-                "page_id": page.id,
-                "name": self.revision_name,
-                "summary": summary,
-                "content": converted,
-            }
-        )
+        page.create_revision(self.revision_name, summary, converted)
         return {"type": "ir.actions.client", "tag": "reload"}
 
     def _create_page(self, source, converted, filename, summary):
         parent = self.parent_id.exists()
-        if not parent or parent.type != "category":
+        if not parent or parent.page_type != "category":
             raise UserError(_("Choose a Knowledge category for the new page."))
         parent.check_access("read")
 
-        Page = self.env["document.page"]
+        Page = self.env["knowledge.markdown.page"]
         Page.check_access("create")
         title = self._page_title(source, filename)
         page = Page.create(
             {
                 "name": title,
-                "type": "content",
+                "page_type": "content",
                 "parent_id": parent.id,
             }
         )
-        page._create_history(
-            {
-                "page_id": page.id,
-                "name": self.revision_name,
-                "summary": summary,
-                "content": converted,
-            }
-        )
+        page.create_revision(self.revision_name, summary, converted)
         return {
             "type": "ir.actions.act_window",
             "name": page.name,
-            "res_model": "document.page",
+            "res_model": "knowledge.markdown.page",
             "res_id": page.id,
             "view_mode": "form",
             "target": "current",
         }
-
-    def _decode_markdown_file(self):
-        filename = os.path.basename((self.filename or "document.md").strip()) or "document.md"
-        if not filename.lower().endswith((".md", ".markdown")):
-            raise UserError(_("Please upload a .md or .markdown file."))
-
-        try:
-            raw = base64.b64decode(self.markdown_file or b"", validate=True)
-        except (binascii.Error, ValueError):
-            raise UserError(_("The uploaded file could not be decoded.")) from None
-
-        if len(raw) > MAX_MARKDOWN_BYTES:
-            raise UserError(_("Markdown files are limited to 2 MiB."))
-
-        try:
-            return raw.decode("utf-8"), filename
-        except UnicodeDecodeError:
-            raise UserError(_("The Markdown file must be UTF-8 encoded.")) from None
 
     def _page_title(self, source, filename):
         explicit = (self.page_name or "").strip()
