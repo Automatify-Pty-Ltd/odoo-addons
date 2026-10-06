@@ -6,8 +6,6 @@ from odoo.exceptions import UserError
 
 from odoo.addons.automatify_markdown.services import decode_markdown_file, markdown_to_html
 
-
-MAX_MARKDOWN_BYTES = 2 * 1024 * 1024
 _ATX_H1_RE = re.compile(r"(?m)^\s*#\s+(.+?)\s*#*\s*$")
 _INLINE_MARKUP_RE = re.compile(r"[*_`~]+")
 
