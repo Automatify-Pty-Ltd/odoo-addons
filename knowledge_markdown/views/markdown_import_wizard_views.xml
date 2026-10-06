@@ -56,4 +56,12 @@
         <field name="target">new</field>
         <field name="context">{'default_target_mode': 'new'}</field>
     </record>
+
+    <menuitem
+        id="menu_knowledge_markdown_import"
+        name="Import Markdown"
+        parent="menu_knowledge_markdown_root"
+        action="action_knowledge_markdown_import_new"
+        sequence="30"
+    />
 </odoo>
