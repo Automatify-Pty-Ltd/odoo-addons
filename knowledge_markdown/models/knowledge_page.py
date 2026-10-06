@@ -45,7 +45,7 @@ class KnowledgeMarkdownPage(models.Model):
         for page in self:
             page.history_count = len(page.history_ids)
 
-    @api.constrains("parent_id", "page_type")
+    @api.constrains("parent_id", "page_type", "content")
     def _check_parent(self):
         if not self._check_recursion():
             raise ValidationError(_("You cannot create recursive Knowledge categories."))
@@ -91,12 +91,13 @@ class KnowledgeMarkdownPage(models.Model):
             raise UserError(_("Only content pages can have revisions."))
         self.check_access("write")
         self.write({"content": content})
-        return self.env["knowledge.markdown.page.history"].create(
+        return self.env["knowledge.markdown.page.history"].sudo().create(
             {
                 "page_id": self.id,
                 "name": name,
                 "summary": summary,
                 "content": content,
+                "author_id": self.env.user.id,
             }
         )
 
