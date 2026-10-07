@@ -17,7 +17,8 @@ logic is duplicated.
 ## Usage
 
 - **Social Marketing → New from Markdown** creates a new draft.
-- Open an editable Social Post and click **Import Markdown** to replace its content.
+- Use **New from Markdown** when creating a new post.
+- Open a saved editable Social Post and click **Import Markdown** to replace its content.
 - Review the rendered draft, choose LinkedIn/X accounts, then use **Post Now** or
   **Schedule** as usual.
 
