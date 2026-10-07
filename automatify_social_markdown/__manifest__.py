@@ -1,6 +1,6 @@
 {
     "name": "Social Publisher Markdown",
-    "version": "19.0.1.0.0",
+    "version": "19.0.1.0.1",
     "summary": "Create and update Social Publisher drafts from Markdown files",
     "category": "Marketing/Social Marketing",
     "author": "Automatify Pty Ltd",

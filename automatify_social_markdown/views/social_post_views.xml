@@ -12,7 +12,8 @@
                     string="Import Markdown"
                     class="btn-secondary"
                     icon="fa-upload"
-                    invisible="state in ('processing', 'published')"
+                    help="Import Markdown into this saved draft. Use New from Markdown to create a new post."
+                    invisible="not id or state in ('processing', 'published')"
                 />
             </xpath>
         </field>

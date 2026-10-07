@@ -1,5 +1,7 @@
 import base64
 
+from lxml import etree
+
 from odoo.exceptions import UserError
 from odoo.tests.common import TransactionCase
 
@@ -13,6 +15,17 @@ class TestSocialMarkdownImport(TransactionCase):
                 "filename": filename,
             }
         )
+
+
+    def test_inline_import_button_is_hidden_until_post_is_saved(self):
+        view = self.env.ref(
+            "automatify_social_markdown.view_social_post_form_markdown"
+        )
+        arch = etree.fromstring(view.arch_db.encode())
+        buttons = arch.xpath("//button[@name='action_open_markdown_import']")
+
+        self.assertEqual(len(buttons), 1)
+        self.assertIn("not id", buttons[0].get("invisible", ""))
 
     def test_create_draft_from_markdown(self):
         action = self._wizard("# Launch\n\nHello **Odoo**.").action_import()
