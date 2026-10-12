@@ -13,6 +13,7 @@
         "wizard/social_markdown_import_wizard_views.xml",
         "views/social_post_views.xml",
     ],
+    "images": ["static/description/banner.png"],
     "installable": True,
     "auto_install": False,
     "application": False,
