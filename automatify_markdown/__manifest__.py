@@ -9,6 +9,7 @@
     "license": "LGPL-3",
     "depends": ["base"],
     "external_dependencies": {"python": ["markdown"]},
+    "images": ["static/description/banner.png"],
     "installable": True,
     "auto_install": False,
     "application": False,
