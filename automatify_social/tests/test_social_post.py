@@ -79,6 +79,22 @@ class TestSocialPost(TransactionCase):
         self.assertIn("Automatify [1]", post.message_text)
         self.assertIn("[1] https://automatify.com.au", post.message_text)
 
+    def test_social_user_can_edit_html_message_through_precommit_flush(self):
+        # Regression: Odoo 19 mail tracking rejects Html fields at savepoint
+        # release even when the Social user has normal write permissions.
+        social_user = new_test_user(
+            self.env,
+            login="social-html-edit-user",
+            groups="automatify_social.group_automatify_social_user",
+        )
+        post = self.env["automatify.social.post"].with_user(social_user).create({
+            "message": "<p>Initial draft</p>",
+        })
+        with self.env.cr.savepoint():
+            post.write({"message": "<p>Edited draft</p>"})
+        self.assertIn("Edited draft", post.message_text)
+        self.assertEqual(post.state, "draft")
+
     def test_empty_html_content_is_rejected(self):
         with self.assertRaises(ValidationError):
             self.env["automatify.social.post"].create({"message": "<p><br></p>"})
