@@ -70,7 +70,34 @@ class TestLinkedInProvider(TransactionCase):
         self.account._get_social_provider().publish(self.account, self.post)
 
         _, kwargs = post_request.call_args
-        self.assertEqual(kwargs["json"]["commentary"], "Hello *Odoo*")
+        self.assertEqual(kwargs["json"]["commentary"], r"Hello \*Odoo\*")
+
+    def test_linkedin_little_text_format_special_characters(self):
+        provider = self.account._get_social_provider()
+        value = r"API: (MCP) [link] @someone {test} | *bold* _id ~x~ <x> \ #MCP #Odoo plain #"
+        expected = r"API: \(MCP\) \[link\] \@someone \{test\} \| \*bold\* \_id \~x\~ \<x\> \\ #MCP #Odoo plain \#"
+        self.assertEqual(provider._escape_commentary(value), expected)
+
+    @patch("odoo.addons.automatify_social_linkedin.providers.linkedin.requests.post")
+    def test_publish_keeps_full_text_after_parentheses_and_hashtags(self, post_request):
+        self.post.message = (
+            "<p>At Automatify, we're exploring exactly this using "
+            "MCP (Model Context Protocol) to connect ChatGPT with Odoo. "
+            "The remaining description must not disappear. #MCP #Odoo #AIIntegration</p>"
+        )
+        post_request.return_value = Mock(
+            status_code=201,
+            text="",
+            headers={"x-restli-id": "urn:li:share:45"},
+        )
+
+        self.account._get_social_provider().publish(self.account, self.post)
+
+        commentary = post_request.call_args.kwargs["json"]["commentary"]
+        self.assertIn(r"MCP \(Model Context Protocol\) to connect ChatGPT", commentary)
+        self.assertIn("The remaining description must not disappear.", commentary)
+        self.assertIn("#MCP #Odoo #AIIntegration", commentary)
+        self.assertNotIn(r"\#MCP", commentary)
 
     @patch("odoo.addons.automatify_social_linkedin.providers.linkedin.time.sleep")
     @patch("odoo.addons.automatify_social_linkedin.providers.linkedin.requests.get")
