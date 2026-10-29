@@ -25,6 +25,29 @@ class LinkedInProvider(SocialProvider):
     timeout = 20
 
     @staticmethod
+    def _escape_commentary(text):
+        """Encode plain text for LinkedIn little Text Format.
+
+        Parentheses and other reserved characters must be escaped or LinkedIn
+        may silently discard everything after an unescaped character. Preserve
+        actual #hashtags as LinkedIn hashtag elements.
+        """
+        text = text or ""
+        reserved = r"\|{}@[]()<>#*_~"
+        output = []
+        for index, char in enumerate(text):
+            is_hashtag = (
+                char == "#"
+                and index + 1 < len(text)
+                and (text[index + 1].isalnum() or text[index + 1] == "_")
+                and (index == 0 or not (text[index - 1].isalnum() or text[index - 1] == "_"))
+            )
+            if char in reserved and not is_hashtag:
+                output.append("\\")
+            output.append(char)
+        return "".join(output)
+
+    @staticmethod
     def _headers(token, version, content_type="application/json"):
         return {
             "Authorization": f"Bearer {token}",
@@ -178,7 +201,7 @@ class LinkedInProvider(SocialProvider):
 
         payload = {
             "author": author,
-            "commentary": post.message_text,
+            "commentary": self._escape_commentary(post.message_text),
             "visibility": "PUBLIC",
             "distribution": {
                 "feedDistribution": "MAIN_FEED",
