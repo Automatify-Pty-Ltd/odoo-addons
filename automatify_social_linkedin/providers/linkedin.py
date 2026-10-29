@@ -1,4 +1,5 @@
 from datetime import timedelta
+from urllib.parse import quote
 import time
 
 import requests
@@ -38,7 +39,7 @@ class LinkedInProvider(SocialProvider):
 
     def _wait_for_image_available(self, account, image_urn, token, version):
         headers = self._headers(token, version)
-        endpoint = self.image_status_endpoint.format(image_urn=image_urn)
+        endpoint = self.image_status_endpoint.format(image_urn=quote(image_urn, safe=""))
 
         for attempt in range(self.image_poll_attempts):
             try:
