@@ -115,7 +115,7 @@ class TestLinkedInProvider(TransactionCase):
         self.assertEqual(get_request.call_count, 2)
         self.assertEqual(
             get_request.call_args_list[0].args[0],
-            "https://api.linkedin.com/rest/images/urn:li:image:abc123",
+            "https://api.linkedin.com/rest/images/urn%3Ali%3Aimage%3Aabc123",
         )
         sleep.assert_called_once_with(1)
         self.assertEqual(
