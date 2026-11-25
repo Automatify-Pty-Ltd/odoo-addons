@@ -44,6 +44,18 @@ scheduled publication time.
 APIs. This lets authors work with paragraphs, emphasis and links without sending
 raw HTML to LinkedIn, X or future providers.
 
+### Optional campaign attribution
+
+Managers can set **Campaign Tracking Hosts** on each Social Account (for example,
+`example.org, www.example.org`). Leave it blank to keep existing publication
+behavior. For links to those exact hosts, outbound LinkedIn and X text receives
+missing `utm_source` (provider key), `utm_medium=social`,
+`utm_campaign=odoo_social`, and `utm_content=post_<Odoo post ID>` parameters.
+Existing parameters and fragments are preserved; external hosts and signed or
+authentication URLs are left alone. The stored draft is never rewritten.
+No link shortening, external tracking service, cookies, or republishing is added.
+Additional connectors can use `post._message_text_for_account(account)`.
+
 Stage 1.1 deliberately starts with one image per post. Multi-image/video support
 can expand later without changing the provider contract.
 
