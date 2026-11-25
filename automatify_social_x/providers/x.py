@@ -107,7 +107,7 @@ class XProvider(SocialProvider):
 
     def publish(self, account, post):
         token = account._x_get_access_token()
-        payload = {"text": post.message_text}
+        payload = {"text": post._message_text_for_account(account)}
 
         if post.image_ids:
             image = post.image_ids.ensure_one()

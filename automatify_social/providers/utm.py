@@ -1,0 +1,49 @@
+"""Opt-in campaign tags for outbound links on explicitly configured websites."""
+
+import re
+from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
+
+_URL = re.compile(r"https?://[^\s<>\"']+", re.IGNORECASE)
+
+
+def tag_social_links(text, configured_hosts, source, post_id):
+    """Keep the authored text intact; add only missing tags to approved hosts."""
+    hosts = {host.strip().lower() for host in (configured_hosts or "").split(",") if host.strip()}
+    if not hosts or not source or not post_id:
+        return text
+    tags = {
+        "utm_source": source,
+        "utm_medium": "social",
+        "utm_campaign": "odoo_social",
+        "utm_content": f"post_{post_id}",
+    }
+
+    def replace(match):
+        original = match.group(0)
+        # Plaintext rendering loses the boundary between URL data and prose.
+        # Do not guess whether terminal punctuation belongs to the URL.
+        if original[-1] in ".,;:!?)]}":
+            return original
+        try:
+            parts = urlsplit(original)
+            if (
+                parts.hostname not in hosts
+                or parts.username is not None
+                or parts.password is not None
+                or parts.port not in (None, 443 if parts.scheme == "https" else 80)
+            ):
+                return original
+            keys = {key.lower() for key, _ in parse_qsl(parts.query, keep_blank_values=True)}
+            # Do not modify signed/authentication URLs, even on an approved host.
+            if keys.intersection({"signature", "sig", "token", "access_token", "auth", "code", "x-amz-signature", "x-goog-signature"}):
+                return original
+            missing = {key: value for key, value in tags.items() if key not in keys}
+            if not missing:
+                return original
+            # Preserve the original encoded query instead of re-encoding it.
+            query = parts.query + ("&" if parts.query else "") + urlencode(missing)
+            return urlunsplit(parts._replace(query=query))
+        except ValueError:
+            return original
+
+    return _URL.sub(replace, text)

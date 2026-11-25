@@ -27,6 +27,7 @@
                             <field name="platform"/>
                             <field name="handle"/>
                             <field name="external_account_id"/>
+                            <field name="utm_tracking_hosts" placeholder="example.org, www.example.org"/>
                         </group>
                         <group>
                             <field name="connection_state" readonly="1"/>

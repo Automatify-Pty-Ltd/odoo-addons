@@ -5,6 +5,7 @@ from odoo.exceptions import AccessError, UserError, ValidationError
 from odoo.tools import html2plaintext, is_html_empty
 
 from odoo.addons.automatify_social.providers.base import AmbiguousPublishError
+from odoo.addons.automatify_social.providers.utm import tag_social_links
 
 _logger = logging.getLogger(__name__)
 
@@ -137,6 +138,14 @@ class AutomatifySocialPost(models.Model):
     def _compute_message_text(self):
         for post in self:
             post.message_text = html2plaintext(post.message or "", include_references=True)
+
+    def _message_text_for_account(self, account):
+        """Render per-channel tracking without changing the stored post or draft."""
+        self.ensure_one()
+        account.ensure_one()
+        return tag_social_links(
+            self.message_text or "", account.utm_tracking_hosts, account.platform, self.id
+        )
 
     @api.depends("message")
     def _compute_name(self):
