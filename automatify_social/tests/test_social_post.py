@@ -94,13 +94,24 @@ class TestSocialPost(TransactionCase):
         self.assertEqual(post.message_text, authored)
 
     def test_campaign_tags_preserve_queries_and_fragments(self):
-        original = "(https://www.example.org/page?item=a%20b&utm_source=custom#intro)."
+        original = "https://www.example.org/page?item=a%20b&utm_source=custom#intro"
         tracked = tag_social_links(original, "example.org, www.example.org", "linkedin", 42)
         self.assertEqual(
             tracked,
-            "(https://www.example.org/page?item=a%20b&utm_source=custom&utm_medium=social&utm_campaign=odoo_social&utm_content=post_42#intro).",
+            "https://www.example.org/page?item=a%20b&utm_source=custom&utm_medium=social&utm_campaign=odoo_social&utm_content=post_42#intro",
         )
         self.assertEqual(tag_social_links(tracked, "www.example.org", "linkedin", 42), tracked)
+
+    def test_campaign_tags_leave_ambiguous_url_boundaries_unchanged(self):
+        for original in (
+            "https://example.org/sale!",
+            "https://example.org/page?utm_source=custom!",
+            "(https://example.org/page).",
+            "https://example.org/path(with-brackets)",
+            "https://example.org/path?item=last;",
+        ):
+            with self.subTest(url=original):
+                self.assertEqual(tag_social_links(original, "example.org", "x", 42), original)
 
     def test_campaign_tags_differ_by_network_and_skip_other_hosts(self):
         original = "https://example.org/ https://example.org.evil.test/ https://example.org/?token=secret https://youtube.com/watch?v=test"
