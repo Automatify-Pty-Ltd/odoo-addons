@@ -201,7 +201,7 @@ class LinkedInProvider(SocialProvider):
 
         payload = {
             "author": author,
-            "commentary": self._escape_commentary(post.message_text),
+            "commentary": self._escape_commentary(post._message_text_for_account(account)),
             "visibility": "PUBLIC",
             "distribution": {
                 "feedDistribution": "MAIN_FEED",
