@@ -20,17 +20,12 @@ def tag_social_links(text, configured_hosts, source, post_id):
 
     def replace(match):
         original = match.group(0)
-        url = original.rstrip(".,;:!?")
-        # A surrounding sentence/Markdown link may have unmatched closing brackets.
-        while url and url[-1] in ")]}":
-            closing = url[-1]
-            opening = {")": "(", "]": "[", "}": "{"}[closing]
-            if url.count(closing) <= url.count(opening):
-                break
-            url = url[:-1]
-        suffix = original[len(url):]
+        # Plaintext rendering loses the boundary between URL data and prose.
+        # Do not guess whether terminal punctuation belongs to the URL.
+        if original[-1] in ".,;:!?)]}":
+            return original
         try:
-            parts = urlsplit(url)
+            parts = urlsplit(original)
             if (
                 parts.hostname not in hosts
                 or parts.username is not None
@@ -47,7 +42,7 @@ def tag_social_links(text, configured_hosts, source, post_id):
                 return original
             # Preserve the original encoded query instead of re-encoding it.
             query = parts.query + ("&" if parts.query else "") + urlencode(missing)
-            return urlunsplit(parts._replace(query=query)) + suffix
+            return urlunsplit(parts._replace(query=query))
         except ValueError:
             return original
 
