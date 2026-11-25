@@ -52,7 +52,9 @@ behavior. For links to those exact hosts, outbound LinkedIn and X text receives
 missing `utm_source` (provider key), `utm_medium=social`,
 `utm_campaign=odoo_social`, and `utm_content=post_<Odoo post ID>` parameters.
 Existing parameters and fragments are preserved; external hosts and signed or
-authentication URLs are left alone. The stored draft is never rewritten.
+authentication URLs are left alone. Plaintext links ending in ambiguous punctuation
+are also left unchanged; use a standalone link with an unambiguous ending for
+tracking. The stored draft is never rewritten.
 No link shortening, external tracking service, cookies, or republishing is added.
 Additional connectors can use `post._message_text_for_account(account)`.
 
