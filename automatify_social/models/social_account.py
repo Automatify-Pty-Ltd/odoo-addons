@@ -24,6 +24,11 @@ class AutomatifySocialAccount(models.Model):
         help="Provider-side account/page identifier. Credentials live in connector addons.",
     )
     active = fields.Boolean(default=True)
+    utm_tracking_hosts = fields.Char(
+        string="Campaign Tracking Hosts",
+        copy=False,
+        help="Optional comma-separated exact website hostnames. Only links to these hosts receive missing campaign tags when published.",
+    )
     company_id = fields.Many2one(
         "res.company",
         required=True,
