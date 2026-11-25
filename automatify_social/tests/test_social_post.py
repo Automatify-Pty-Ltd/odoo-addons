@@ -6,6 +6,7 @@ from odoo import fields
 from odoo.exceptions import AccessError, UserError, ValidationError
 from odoo.tests.common import TransactionCase, new_test_user
 
+from odoo.addons.automatify_social.providers.utm import tag_social_links
 from odoo.addons.automatify_social.providers.base import (
     AmbiguousPublishError,
     ProviderPublishResult,
@@ -78,6 +79,36 @@ class TestSocialPost(TransactionCase):
         self.assertIn("Hello *Odoo*", post.message_text)
         self.assertIn("Automatify [1]", post.message_text)
         self.assertIn("[1] https://automatify.com.au", post.message_text)
+
+    def test_campaign_tracking_is_opt_in_and_does_not_edit_draft(self):
+        post = self.env["automatify.social.post"].create(
+            {"message": "<p><a href='https://example.org/page'>Link</a></p>"}
+        )
+        authored = post.message_text
+        self.assertEqual(post._message_text_for_account(self.account), authored)
+        self.account.utm_tracking_hosts = "example.org, www.example.org"
+        self.assertIn(
+            f"https://example.org/page?utm_source=test&utm_medium=social&utm_campaign=odoo_social&utm_content=post_{post.id}",
+            post._message_text_for_account(self.account),
+        )
+        self.assertEqual(post.message_text, authored)
+
+    def test_campaign_tags_preserve_queries_and_fragments(self):
+        original = "(https://www.example.org/page?item=a%20b&utm_source=custom#intro)."
+        tracked = tag_social_links(original, "example.org, www.example.org", "linkedin", 42)
+        self.assertEqual(
+            tracked,
+            "(https://www.example.org/page?item=a%20b&utm_source=custom&utm_medium=social&utm_campaign=odoo_social&utm_content=post_42#intro).",
+        )
+        self.assertEqual(tag_social_links(tracked, "www.example.org", "linkedin", 42), tracked)
+
+    def test_campaign_tags_differ_by_network_and_skip_other_hosts(self):
+        original = "https://example.org/ https://example.org.evil.test/ https://example.org/?token=secret https://youtube.com/watch?v=test"
+        for source in ("linkedin", "x", "reddit"):
+            tagged = tag_social_links(original, "example.org", source, 42)
+            self.assertIn(f"utm_source={source}", tagged)
+            self.assertIn("utm_content=post_42", tagged)
+            self.assertTrue(tagged.endswith("https://example.org.evil.test/ https://example.org/?token=secret https://youtube.com/watch?v=test"))
 
     def test_empty_html_content_is_rejected(self):
         with self.assertRaises(ValidationError):
