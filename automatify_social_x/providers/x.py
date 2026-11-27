@@ -30,7 +30,7 @@ class XProvider(SocialProvider):
         allowed_types = {"image/jpeg", "image/png", "image/webp"}
         if attachment.mimetype not in allowed_types:
             raise UserError("X image publishing supports JPG, PNG, and WebP files.")
-        raw = attachment.raw
+        raw = attachment.raw.content
         if not raw:
             raise UserError("The selected X image attachment is empty.")
 

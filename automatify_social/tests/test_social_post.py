@@ -4,6 +4,7 @@ from unittest.mock import Mock, patch
 
 from odoo import fields
 from odoo.exceptions import AccessError, UserError, ValidationError
+from odoo.tools.binary import BinaryBytes
 from odoo.tests.common import TransactionCase, new_test_user
 
 from odoo.addons.automatify_social.providers.utm import tag_social_links
@@ -52,7 +53,7 @@ class TestSocialPost(TransactionCase):
                 "name": name,
                 "type": "binary",
                 "mimetype": "image/png",
-                "db_datas": base64.b64encode(b"fake-png-data"),
+                "raw": BinaryBytes(b"fake-png-data"),
             }
         )
 
