@@ -23,7 +23,7 @@ class AutomatifySocialPost(models.Model):
     message = fields.Html(
         string="Post Content",
         required=True,
-        # Odoo 19 mail.tracking.value does not support fields.Html at precommit.
+        # Odoo 20 mail.tracking.value does not support fields.Html at precommit.
         # Keep status/date tracking, but do not track rich-text message changes.
         tracking=False,
         sanitize=True,

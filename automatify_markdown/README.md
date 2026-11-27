@@ -16,7 +16,6 @@ It has no Knowledge or Social Publisher models, menus, or provider integrations.
 
 ## Consumers
 
-- `knowledge_markdown` provides standalone Markdown knowledge pages.
 - `automatify_social_markdown` imports Markdown into Social Publisher drafts.
 
 ## Dependencies

@@ -56,7 +56,7 @@ class TestSocialPost(TransactionCase):
             }
         )
 
-    def test_access_groups_use_odoo19_privilege(self):
+    def test_access_groups_use_odoo20_privilege(self):
         privilege = self.env.ref("automatify_social.privilege_automatify_social_marketing")
         user_group = self.env.ref("automatify_social.group_automatify_social_user")
         manager_group = self.env.ref("automatify_social.group_automatify_social_manager")
@@ -122,7 +122,7 @@ class TestSocialPost(TransactionCase):
             self.assertTrue(tagged.endswith("https://example.org.evil.test/ https://example.org/?token=secret https://youtube.com/watch?v=test"))
 
     def test_social_user_can_edit_html_message_through_precommit_flush(self):
-        # Regression: Odoo 19 mail tracking rejects Html fields at savepoint
+        # Regression: Odoo 20 mail tracking rejects Html fields at savepoint
         # release even when the Social user has normal write permissions.
         social_user = new_test_user(
             self.env,
