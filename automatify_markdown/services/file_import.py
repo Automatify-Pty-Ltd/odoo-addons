@@ -16,8 +16,11 @@ def decode_markdown_file(payload, filename=None, *, max_bytes=DEFAULT_MAX_MARKDO
         raise UserError(_("Please upload a .md or .markdown file."))
 
     try:
-        raw = base64.b64decode(payload or b"", validate=True)
-    except (binascii.Error, ValueError):
+        if hasattr(payload, "content"):
+            raw = payload.content
+        else:
+            raw = base64.b64decode(payload or b"", validate=True)
+    except (binascii.Error, ValueError, TypeError):
         raise UserError(_("The uploaded file could not be decoded.")) from None
 
     if len(raw) > max_bytes:

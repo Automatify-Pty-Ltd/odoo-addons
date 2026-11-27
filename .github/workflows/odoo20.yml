@@ -1,0 +1,75 @@
+name: Odoo 20
+
+on:
+  pull_request:
+  push:
+    branches:
+      - "20.0"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: odoo20-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  ODOO_IMAGE: odoo:20.0-20261123
+  POSTGRES_IMAGE: postgres:18
+
+jobs:
+  test:
+    name: Install and test on Odoo 20
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out addon repository
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: Build pinned Odoo 20 test image
+        shell: bash
+        run: |
+          set -euo pipefail
+          context="$(mktemp -d "$RUNNER_TEMP/odoo20-build.XXXXXX")"
+          cp "$GITHUB_WORKSPACE/.github/requirements-ci.txt" "$context/requirements-ci.txt"
+          cat > "$context/Dockerfile" <<EOF
+          FROM ${ODOO_IMAGE}
+          USER root
+          COPY requirements-ci.txt /tmp/requirements-ci.txt
+          RUN pip3 install --no-cache-dir --break-system-packages --require-hashes -r /tmp/requirements-ci.txt
+          USER odoo
+          EOF
+          docker build --file "$context/Dockerfile" --tag automatify-odoo20-ci "$context"
+      - name: Start PostgreSQL
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker network create odoo20-ci
+          docker run --detach --rm --name db --network odoo20-ci \
+            --env POSTGRES_DB=postgres --env POSTGRES_USER=odoo --env POSTGRES_PASSWORD=odoo "$POSTGRES_IMAGE"
+          for attempt in $(seq 1 60); do
+            docker exec db pg_isready -U odoo -d postgres >/dev/null 2>&1 && exit 0
+            sleep 1
+          done
+          docker logs db
+          exit 1
+      - name: Test Social Publisher and Markdown integration
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker run --rm --name odoo20-ci-social --network odoo20-ci \
+            --volume "$GITHUB_WORKSPACE:/mnt/extra-addons:ro" automatify-odoo20-ci odoo \
+            --database=odoo20_ci_social --without-demo=true --http-interface=127.0.0.1 \
+            --addons-path=/usr/lib/python3/dist-packages/odoo/addons,/mnt/extra-addons \
+            --init=automatify_social_linkedin,automatify_social_x,automatify_social_markdown \
+            --test-tags=/automatify_markdown,/automatify_social,/automatify_social_linkedin,/automatify_social_x,/automatify_social_markdown \
+            --stop-after-init --log-level=test
+      - name: Show database logs on failure
+        if: failure()
+        run: docker logs db || true
+      - name: Clean up
+        if: always()
+        run: |
+          docker rm --force db 2>/dev/null || true
+          docker network rm odoo20-ci 2>/dev/null || true

@@ -1,6 +1,6 @@
 {
     "name": "Social Publisher",
-    "version": "19.0.1.2.1",
+    "version": "20.0.1.2.1",
     "summary": "Open social publishing core for Odoo Community",
     "author": "Automatify Pty Ltd",
     "website": "https://automatify.com.au",
@@ -10,7 +10,7 @@
     "depends": ["base", "mail"],
     "data": [
         "security/social_security.xml",
-        "security/ir.model.access.csv",
+        "security/ir.access.csv",
         "views/social_account_views.xml",
         "views/social_post_views.xml",
         "views/social_menus.xml",

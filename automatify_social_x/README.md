@@ -1,6 +1,6 @@
 # Social Publisher X
 
-X connector for `automatify_social` on Odoo 19 Community.
+X connector for `automatify_social` on Odoo 20 Community.
 
 ## Stage 1.1 scope
 

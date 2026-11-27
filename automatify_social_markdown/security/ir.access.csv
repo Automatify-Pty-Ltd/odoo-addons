@@ -1,0 +1,2 @@
+id,name,model_id:id,group_id:id,operation,domain
+access_social_markdown_import_user,social.markdown.import.user,model_automatify_social_markdown_import_wizard,automatify_social.group_automatify_social_user,crud,

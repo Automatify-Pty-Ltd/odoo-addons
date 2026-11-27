@@ -4,6 +4,7 @@ from unittest.mock import Mock, patch
 
 from odoo import fields
 from odoo.exceptions import AccessError, UserError, ValidationError
+from odoo.tools.binary import BinaryBytes
 from odoo.tests.common import TransactionCase, new_test_user
 
 from odoo.addons.automatify_social.providers.utm import tag_social_links
@@ -52,11 +53,11 @@ class TestSocialPost(TransactionCase):
                 "name": name,
                 "type": "binary",
                 "mimetype": "image/png",
-                "datas": base64.b64encode(b"fake-png-data"),
+                "raw": BinaryBytes(b"fake-png-data"),
             }
         )
 
-    def test_access_groups_use_odoo19_privilege(self):
+    def test_access_groups_use_odoo20_privilege(self):
         privilege = self.env.ref("automatify_social.privilege_automatify_social_marketing")
         user_group = self.env.ref("automatify_social.group_automatify_social_user")
         manager_group = self.env.ref("automatify_social.group_automatify_social_manager")
@@ -79,6 +80,37 @@ class TestSocialPost(TransactionCase):
         self.assertIn("Hello *Odoo*", post.message_text)
         self.assertIn("Automatify [1]", post.message_text)
         self.assertIn("[1] https://automatify.com.au", post.message_text)
+
+    def test_images_are_company_bound(self):
+        other_company = self.env["res.company"].create({"name": "Other Image Company"})
+        image = self.env["ir.attachment"].create(
+            {
+                "name": "company-b.png",
+                "raw": BinaryBytes(b"fake-image"),
+                "mimetype": "image/png",
+                "company_id": other_company.id,
+            }
+        )
+        post = self.env["automatify.social.post"].create(
+            {"message": "Company image", "company_id": self.env.company.id}
+        )
+        with self.assertRaises(ValidationError):
+            post.write({"image_ids": [(6, 0, image.ids)]})
+
+        same_company = self.env["ir.attachment"].create(
+            {
+                "name": "company-a.png",
+                "raw": BinaryBytes(b"fake-image"),
+                "mimetype": "image/png",
+                "company_id": self.env.company.id,
+            }
+        )
+        post.write({"image_ids": [(6, 0, same_company.ids)]})
+        self.assertEqual(post.image_ids, same_company)
+        with self.assertRaises(ValidationError):
+            post.write({"company_id": other_company.id})
+        with self.assertRaises(UserError):
+            same_company.write({"company_id": other_company.id})
 
     def test_campaign_tracking_is_opt_in_and_does_not_edit_draft(self):
         post = self.env["automatify.social.post"].create(
@@ -122,7 +154,7 @@ class TestSocialPost(TransactionCase):
             self.assertTrue(tagged.endswith("https://example.org.evil.test/ https://example.org/?token=secret https://youtube.com/watch?v=test"))
 
     def test_social_user_can_edit_html_message_through_precommit_flush(self):
-        # Regression: Odoo 19 mail tracking rejects Html fields at savepoint
+        # Regression: Odoo 20 mail tracking rejects Html fields at savepoint
         # release even when the Social user has normal write permissions.
         social_user = new_test_user(
             self.env,

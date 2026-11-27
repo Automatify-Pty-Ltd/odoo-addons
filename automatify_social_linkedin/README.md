@@ -1,6 +1,6 @@
 # Social Publisher LinkedIn
 
-LinkedIn connector for `automatify_social` on Odoo 19 Community.
+LinkedIn connector for `automatify_social` on Odoo 20 Community.
 
 ## Current Stage 1.1 scope
 

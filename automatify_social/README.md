@@ -1,6 +1,6 @@
 # Social Publisher
 
-Open-source social publishing core for Odoo 19 Community.
+Open-source social publishing core for Odoo 20 Community.
 
 ## Current Stage 1.1 scope
 

@@ -109,7 +109,7 @@ class TestLinkedInOAuth(TransactionCase):
             self.account._ensure_remote_identity_matches("urn:li:organization:222")
 
     def test_redirect_uri_uses_odoo_base_url(self):
-        self.env["ir.config_parameter"].sudo().set_param(
+        self.env["ir.config_parameter"].sudo().set_str(
             "web.base.url", "https://odoo.example.com/"
         )
         self.assertEqual(
@@ -119,8 +119,8 @@ class TestLinkedInOAuth(TransactionCase):
 
     def test_settings_secrets_and_writes_are_manager_only(self):
         params = self.env["ir.config_parameter"].sudo()
-        params.set_param("automatify_social_linkedin.client_id", "original-id")
-        params.set_param(
+        params.set_str("automatify_social_linkedin.client_id", "original-id")
+        params.set_str(
             "automatify_social_linkedin.client_secret", "original-secret"
         )
         settings_model = self.env[
@@ -146,10 +146,10 @@ class TestLinkedInOAuth(TransactionCase):
             settings.action_save()
 
         self.assertEqual(
-            params.get_param("automatify_social_linkedin.client_id"), "original-id"
+            params.get_str("automatify_social_linkedin.client_id"), "original-id"
         )
         self.assertEqual(
-            params.get_param("automatify_social_linkedin.client_secret"),
+            params.get_str("automatify_social_linkedin.client_secret"),
             "original-secret",
         )
 

@@ -162,7 +162,7 @@ class LinkedInProvider(SocialProvider):
                     "Authorization": f"Bearer {token}",
                     "Content-Type": attachment.mimetype,
                 },
-                data=attachment.raw,
+                data=attachment.raw.content,
                 timeout=self.timeout,
             )
         except requests.RequestException as exc:

@@ -24,11 +24,11 @@ class AutomatifySocialXSettings(models.TransientModel):
         self._ensure_social_manager()
         values = super().default_get(field_list)
         params = self.env["ir.config_parameter"].sudo()
-        base_url = params.get_param("web.base.url", "").rstrip("/")
+        base_url = params.get_str("web.base.url", "").rstrip("/")
         values.update(
             {
-                "client_id": params.get_param("automatify_social_x.client_id", ""),
-                "client_secret": params.get_param(
+                "client_id": params.get_str("automatify_social_x.client_id", ""),
+                "client_secret": params.get_str(
                     "automatify_social_x.client_secret", ""
                 ),
                 "callback_url": (
@@ -42,8 +42,8 @@ class AutomatifySocialXSettings(models.TransientModel):
         self.ensure_one()
         self._ensure_social_manager()
         params = self.env["ir.config_parameter"].sudo()
-        params.set_param("automatify_social_x.client_id", self.client_id)
-        params.set_param("automatify_social_x.client_secret", self.client_secret or "")
+        params.set_str("automatify_social_x.client_id", self.client_id)
+        params.set_str("automatify_social_x.client_secret", self.client_secret or "")
         return {
             "type": "ir.actions.client",
             "tag": "display_notification",

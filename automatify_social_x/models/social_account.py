@@ -43,7 +43,7 @@ class AutomatifySocialAccount(models.Model):
         return super()._get_social_provider()
 
     def _x_redirect_uri(self):
-        base_url = self.env["ir.config_parameter"].sudo().get_param("web.base.url")
+        base_url = self.env["ir.config_parameter"].sudo().get_str("web.base.url")
         if not base_url:
             raise UserError(_("Odoo web.base.url is not configured."))
         return f"{base_url.rstrip('/')}/automatify-social/x/oauth/callback"
@@ -69,7 +69,7 @@ class AutomatifySocialAccount(models.Model):
         client_id = (
             self.env["ir.config_parameter"]
             .sudo()
-            .get_param("automatify_social_x.client_id")
+            .get_str("automatify_social_x.client_id")
         )
         if not client_id:
             raise UserError(_("Configure the X Client ID first."))
@@ -112,8 +112,8 @@ class AutomatifySocialAccount(models.Model):
         if not self.x_refresh_token:
             raise UserError(_("X refresh token is not available; reconnect the account."))
         params = self.env["ir.config_parameter"].sudo()
-        client_id = params.get_param("automatify_social_x.client_id")
-        client_secret = params.get_param("automatify_social_x.client_secret")
+        client_id = params.get_str("automatify_social_x.client_id")
+        client_secret = params.get_str("automatify_social_x.client_secret")
         if not client_id:
             raise UserError(_("X Client ID is not configured."))
 

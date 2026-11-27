@@ -23,7 +23,7 @@ class AutomatifySocialPost(models.Model):
     message = fields.Html(
         string="Post Content",
         required=True,
-        # Odoo 19 mail.tracking.value does not support fields.Html at precommit.
+        # Odoo 20 mail.tracking.value does not support fields.Html at precommit.
         # Keep status/date tracking, but do not track rich-text message changes.
         tracking=False,
         sanitize=True,
@@ -162,16 +162,16 @@ class AutomatifySocialPost(models.Model):
             if is_html_empty(post.message):
                 raise ValidationError(_("Post content cannot be empty."))
 
-    @api.constrains("image_ids")
+    @api.constrains("image_ids", "company_id")
     def _check_images(self):
         for post in self:
             if len(post.image_ids) > 1:
                 raise ValidationError(_("Stage 1.1 currently supports one image per social post."))
-            invalid = post.image_ids.filtered(
-                lambda attachment: not (attachment.mimetype or "").startswith("image/")
-            )
-            if invalid:
-                raise ValidationError(_("Only image attachments can be added to a social post."))
+            for attachment in post.image_ids:
+                if not (attachment.mimetype or "").startswith("image/"):
+                    raise ValidationError(_("Only image attachments can be added to a social post."))
+                if attachment.company_id and attachment.company_id != post.company_id:
+                    raise ValidationError(_("Choose an image from the post company or a shared image."))
 
     @api.constrains("target_ids", "company_id")
     def _check_target_companies(self):
@@ -247,6 +247,7 @@ class AutomatifySocialPost(models.Model):
         return True
 
     def _publish_pending_targets(self):
+        self._check_images()
         for post in self:
             targets = post.target_ids.filtered(lambda target: target.state == "pending")
             for target in targets:

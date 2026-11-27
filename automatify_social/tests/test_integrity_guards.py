@@ -4,6 +4,7 @@ from unittest.mock import patch
 
 from odoo import fields
 from odoo.exceptions import UserError
+from odoo.tools.binary import BinaryBytes
 from odoo.tests.common import TransactionCase
 
 
@@ -28,7 +29,7 @@ class TestSocialIntegrityGuards(TransactionCase):
         return self.env["ir.attachment"].create(
             {
                 "name": "social-image.png",
-                "datas": base64.b64encode(payload),
+                "raw": BinaryBytes(payload),
                 "mimetype": "image/png",
             }
         )
@@ -77,12 +78,12 @@ class TestSocialIntegrityGuards(TransactionCase):
         attachment = self._make_attachment()
         post = self._make_post(attachment)
 
-        attachment.write({"datas": base64.b64encode(b"draft-update")})
+        attachment.write({"raw": BinaryBytes(b"draft-update")})
         post.scheduled_at = fields.Datetime.now() + timedelta(hours=1)
         post.action_schedule()
 
         with self.assertRaises(UserError):
-            attachment.write({"datas": base64.b64encode(b"late-update")})
+            attachment.write({"raw": BinaryBytes(b"late-update")})
         with self.assertRaises(UserError):
             attachment.unlink()
 
@@ -99,7 +100,7 @@ class TestSocialIntegrityGuards(TransactionCase):
         )
 
         with self.assertRaises(UserError):
-            attachment.write({"datas": base64.b64encode(b"racing-update")})
+            attachment.write({"raw": BinaryBytes(b"racing-update")})
 
         post.invalidate_recordset(["state"])
         self.assertEqual(post.state, "processing")

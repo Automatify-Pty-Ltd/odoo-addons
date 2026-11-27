@@ -3,7 +3,7 @@ from unittest.mock import patch
 
 from odoo import fields
 from odoo.exceptions import UserError
-from odoo.tests.common import TransactionCase
+from odoo.tests.common import TransactionCase, new_test_user
 
 
 class TestSocialAccount(TransactionCase):
@@ -100,3 +100,30 @@ class TestSocialAccount(TransactionCase):
         )
 
         self.assertEqual(self.account.name, "Renamed Social Account")
+
+    def test_company_and_role_access_boundaries(self):
+        home = self.env.company
+        other = self.env["res.company"].create({"name": "Other Social Company"})
+        with patch.object(type(self.account), "_social_platform_selection", return_value=[("test", "Test Provider")]):
+            other_account = self.account.copy({"company_id": other.id})
+        posts = [
+            self.env["automatify.social.post"].with_company(company).create({
+                "message": "Company draft",
+                "target_ids": [(0, 0, {"account_id": account.id})],
+            })
+            for company, account in [(home, self.account), (other, other_account)]
+        ]
+        user = new_test_user(self.env, login="social_acl_user", groups="automatify_social.group_automatify_social_user")
+        manager = new_test_user(self.env, login="social_acl_manager", groups="automatify_social.group_automatify_social_manager")
+        for local, foreign, user_operations in [
+            (self.account, other_account, {"read"}),
+            (posts[0], posts[1], {"create", "read", "write"}),
+            (posts[0].target_ids, posts[1].target_ids, {"create", "read", "write"}),
+        ]:
+            for actor in (user, manager):
+                own = local.with_user(actor).with_context(allowed_company_ids=[home.id])
+                outside = foreign.with_env(own.env)
+                for operation in ("create", "read", "write", "unlink"):
+                    with self.subTest(model=local._name, actor=actor.login, operation=operation):
+                        self.assertEqual(own.has_access(operation), actor == manager or operation in user_operations)
+                        self.assertFalse(outside.has_access(operation))

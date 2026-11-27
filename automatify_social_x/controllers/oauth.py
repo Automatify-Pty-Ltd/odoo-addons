@@ -28,8 +28,8 @@ class AutomatifySocialXOAuthController(http.Controller):
 
     def _exchange_code(self, account, code, code_verifier):
         params = request.env["ir.config_parameter"].sudo()
-        client_id = params.get_param("automatify_social_x.client_id")
-        client_secret = params.get_param("automatify_social_x.client_secret")
+        client_id = params.get_str("automatify_social_x.client_id")
+        client_secret = params.get_str("automatify_social_x.client_secret")
         response = requests.post(
             self.token_endpoint,
             data={

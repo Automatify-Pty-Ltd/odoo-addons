@@ -4,6 +4,7 @@ from unittest.mock import Mock, patch
 import requests
 
 from odoo.exceptions import UserError
+from odoo.tools.binary import BinaryBytes
 from odoo.tests.common import TransactionCase
 
 from odoo.addons.automatify_social.providers.base import AmbiguousPublishError
@@ -31,7 +32,7 @@ class TestLinkedInProvider(TransactionCase):
                 "name": "launch.png",
                 "type": "binary",
                 "mimetype": "image/png",
-                "datas": base64.b64encode(b"fake-image-bytes"),
+                "raw": BinaryBytes(b"fake-image-bytes"),
             }
         )
 

@@ -1,6 +1,6 @@
 # Social Publisher Markdown
 
-Import Markdown files into the open-source Social Publisher for Odoo 19.
+Import Markdown files into the open-source Social Publisher for Odoo 20.
 
 ## What it does
 
