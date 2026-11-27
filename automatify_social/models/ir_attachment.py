@@ -41,6 +41,10 @@ class IrAttachment(models.Model):
             )
 
     def write(self, vals):
+        if "company_id" in vals:
+            moved = self.filtered(lambda attachment: attachment.company_id.id != vals["company_id"])
+            if moved._lock_referencing_social_posts():
+                raise UserError(_("Remove the image from its social posts before changing its company."))
         if self._SOCIAL_MEDIA_CONTENT_FIELDS.intersection(vals):
             self._ensure_social_media_mutation_allowed()
         return super().write(vals)

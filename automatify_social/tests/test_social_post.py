@@ -107,6 +107,10 @@ class TestSocialPost(TransactionCase):
         )
         post.write({"image_ids": [(6, 0, same_company.ids)]})
         self.assertEqual(post.image_ids, same_company)
+        with self.assertRaises(ValidationError):
+            post.write({"company_id": other_company.id})
+        with self.assertRaises(UserError):
+            same_company.write({"company_id": other_company.id})
 
     def test_campaign_tracking_is_opt_in_and_does_not_edit_draft(self):
         post = self.env["automatify.social.post"].create(
