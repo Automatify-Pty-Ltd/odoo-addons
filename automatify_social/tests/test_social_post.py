@@ -81,6 +81,33 @@ class TestSocialPost(TransactionCase):
         self.assertIn("Automatify [1]", post.message_text)
         self.assertIn("[1] https://automatify.com.au", post.message_text)
 
+    def test_images_are_company_bound(self):
+        other_company = self.env["res.company"].create({"name": "Other Image Company"})
+        image = self.env["ir.attachment"].create(
+            {
+                "name": "company-b.png",
+                "raw": BinaryBytes(b"fake-image"),
+                "mimetype": "image/png",
+                "company_id": other_company.id,
+            }
+        )
+        post = self.env["automatify.social.post"].create(
+            {"message": "Company image", "company_id": self.env.company.id}
+        )
+        with self.assertRaises(ValidationError):
+            post.write({"image_ids": [(6, 0, image.ids)]})
+
+        same_company = self.env["ir.attachment"].create(
+            {
+                "name": "company-a.png",
+                "raw": BinaryBytes(b"fake-image"),
+                "mimetype": "image/png",
+                "company_id": self.env.company.id,
+            }
+        )
+        post.write({"image_ids": [(6, 0, same_company.ids)]})
+        self.assertEqual(post.image_ids, same_company)
+
     def test_campaign_tracking_is_opt_in_and_does_not_edit_draft(self):
         post = self.env["automatify.social.post"].create(
             {"message": "<p><a href='https://example.org/page'>Link</a></p>"}

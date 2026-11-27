@@ -168,10 +168,21 @@ class AutomatifySocialPost(models.Model):
             if len(post.image_ids) > 1:
                 raise ValidationError(_("Stage 1.1 currently supports one image per social post."))
             invalid = post.image_ids.filtered(
-                lambda attachment: not (attachment.mimetype or "").startswith("image/")
+                lambda attachment: (
+                    not (attachment.mimetype or "").startswith("image/")
+                    or (
+                        attachment.company_id
+                        and attachment.company_id != post.company_id
+                    )
+                )
             )
             if invalid:
-                raise ValidationError(_("Only image attachments can be added to a social post."))
+                raise ValidationError(
+                    _(
+                        "Only image attachments from the post's company (or shared attachments) "
+                        "can be added to a social post."
+                    )
+                )
 
     @api.constrains("target_ids", "company_id")
     def _check_target_companies(self):
