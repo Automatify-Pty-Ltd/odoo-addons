@@ -4,7 +4,7 @@ on:
   pull_request:
   push:
     branches:
-      - 20.0
+      - "20.0"
 
 permissions:
   contents: read
@@ -31,15 +31,16 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          cp "$GITHUB_WORKSPACE/.github/requirements-ci.txt" "$RUNNER_TEMP/requirements-ci.txt"
-          cat > "$RUNNER_TEMP/Dockerfile.odoo-ci" <<EOF
+          context="$(mktemp -d "$RUNNER_TEMP/odoo20-build.XXXXXX")"
+          cp "$GITHUB_WORKSPACE/.github/requirements-ci.txt" "$context/requirements-ci.txt"
+          cat > "$context/Dockerfile" <<EOF
           FROM ${ODOO_IMAGE}
           USER root
           COPY requirements-ci.txt /tmp/requirements-ci.txt
           RUN pip3 install --no-cache-dir --break-system-packages --require-hashes -r /tmp/requirements-ci.txt
           USER odoo
           EOF
-          docker build --file "$RUNNER_TEMP/Dockerfile.odoo-ci" --tag automatify-odoo20-ci "$RUNNER_TEMP"
+          docker build --file "$context/Dockerfile" --tag automatify-odoo20-ci "$context"
       - name: Start PostgreSQL
         shell: bash
         run: |
