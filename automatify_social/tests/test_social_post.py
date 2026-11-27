@@ -52,7 +52,7 @@ class TestSocialPost(TransactionCase):
                 "name": name,
                 "type": "binary",
                 "mimetype": "image/png",
-                "datas": base64.b64encode(b"fake-png-data"),
+                "db_datas": base64.b64encode(b"fake-png-data"),
             }
         )
 

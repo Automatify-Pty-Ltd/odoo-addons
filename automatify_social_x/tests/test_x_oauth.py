@@ -32,7 +32,7 @@ class TestXOAuth(TransactionCase):
         )
 
     def test_redirect_uri_uses_odoo_base_url(self):
-        self.env["ir.config_parameter"].sudo().set_param(
+        self.env["ir.config_parameter"].sudo().set_str(
             "web.base.url", "https://odoo.example.com/"
         )
         self.assertEqual(
@@ -42,8 +42,8 @@ class TestXOAuth(TransactionCase):
 
     def test_settings_secrets_and_writes_are_manager_only(self):
         params = self.env["ir.config_parameter"].sudo()
-        params.set_param("automatify_social_x.client_id", "original-id")
-        params.set_param("automatify_social_x.client_secret", "original-secret")
+        params.set_str("automatify_social_x.client_id", "original-id")
+        params.set_str("automatify_social_x.client_secret", "original-secret")
         settings_model = self.env["automatify.social.x.settings"].with_user(
             self.regular_user
         )
@@ -67,15 +67,15 @@ class TestXOAuth(TransactionCase):
             settings.action_save()
 
         self.assertEqual(
-            params.get_param("automatify_social_x.client_id"), "original-id"
+            params.get_str("automatify_social_x.client_id"), "original-id"
         )
         self.assertEqual(
-            params.get_param("automatify_social_x.client_secret"), "original-secret"
+            params.get_str("automatify_social_x.client_secret"), "original-secret"
         )
 
     @patch("odoo.addons.automatify_social_x.models.social_account.requests.post")
     def test_expired_access_token_is_refreshed(self, post_request):
-        self.env["ir.config_parameter"].sudo().set_param(
+        self.env["ir.config_parameter"].sudo().set_str(
             "automatify_social_x.client_id", "client-id"
         )
         self.account.write(

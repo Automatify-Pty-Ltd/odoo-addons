@@ -88,7 +88,7 @@ class AutomatifySocialAccount(models.Model):
         return super()._get_social_provider()
 
     def _linkedin_redirect_uri(self):
-        base_url = self.env["ir.config_parameter"].sudo().get_param("web.base.url")
+        base_url = self.env["ir.config_parameter"].sudo().get_str("web.base.url")
         if not base_url:
             raise UserError(_("Odoo web.base.url is not configured."))
         return f"{base_url.rstrip('/')}/automatify-social/linkedin/oauth/callback"
@@ -124,8 +124,8 @@ class AutomatifySocialAccount(models.Model):
             self._validate_linkedin_organization_urn()
 
         params = self.env["ir.config_parameter"].sudo()
-        client_id = params.get_param("automatify_social_linkedin.client_id")
-        client_secret = params.get_param("automatify_social_linkedin.client_secret")
+        client_id = params.get_str("automatify_social_linkedin.client_id")
+        client_secret = params.get_str("automatify_social_linkedin.client_secret")
         if not client_id or not client_secret:
             raise UserError(
                 _("Configure the LinkedIn Client ID and Client Secret first.")

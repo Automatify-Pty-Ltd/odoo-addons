@@ -11,7 +11,7 @@ class TestSocialMarkdownImport(TransactionCase):
         return self.env["automatify.social.markdown.import.wizard"].create(
             {
                 "post_id": post.id if post else False,
-                "markdown_file": base64.b64encode(source.encode("utf-8")),
+                "markdown_file": base64.b64encode(source.encode("utf-8")).decode(),
                 "filename": filename,
             }
         )
