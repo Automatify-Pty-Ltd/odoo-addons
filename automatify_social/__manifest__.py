@@ -10,7 +10,7 @@
     "depends": ["base", "mail"],
     "data": [
         "security/social_security.xml",
-        "security/ir.model.access.csv",
+        "security/ir.access.csv",
         "views/social_account_views.xml",
         "views/social_post_views.xml",
         "views/social_menus.xml",

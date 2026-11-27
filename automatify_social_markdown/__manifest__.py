@@ -9,7 +9,7 @@
     "license": "LGPL-3",
     "depends": ["automatify_social", "automatify_markdown"],
     "data": [
-        "security/ir.model.access.csv",
+        "security/ir.access.csv",
         "wizard/social_markdown_import_wizard_views.xml",
         "views/social_post_views.xml",
     ],

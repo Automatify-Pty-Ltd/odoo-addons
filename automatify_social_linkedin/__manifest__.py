@@ -10,7 +10,7 @@
     "depends": ["automatify_social"],
     "external_dependencies": {"python": ["requests"]},
     "data": [
-        "security/ir.model.access.csv",
+        "security/ir.access.csv",
         "views/social_account_views.xml",
         "views/linkedin_settings_views.xml",
     ],

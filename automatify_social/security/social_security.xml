@@ -23,7 +23,6 @@
         <field name="model_id" ref="model_automatify_social_account"/>
         <field name="operation">crud</field>
         <field name="domain">[('company_id', 'in', company_ids)]</field>
-        <field name="group_id" ref="automatify_social.group_automatify_social_user"/>
     </record>
 
     <record id="social_post_company_rule" model="ir.access">
@@ -31,7 +30,6 @@
         <field name="model_id" ref="model_automatify_social_post"/>
         <field name="operation">crud</field>
         <field name="domain">[('company_id', 'in', company_ids)]</field>
-        <field name="group_id" ref="automatify_social.group_automatify_social_user"/>
     </record>
 
     <record id="social_post_target_company_rule" model="ir.access">
@@ -39,6 +37,5 @@
         <field name="model_id" ref="model_automatify_social_post_target"/>
         <field name="operation">crud</field>
         <field name="domain">[('company_id', 'in', company_ids)]</field>
-        <field name="group_id" ref="automatify_social.group_automatify_social_user"/>
     </record>
 </odoo>
