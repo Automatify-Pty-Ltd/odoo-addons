@@ -1,6 +1,6 @@
 # Knowledge Markdown
 
-A self-contained Markdown knowledge workspace for Odoo 19.
+A self-contained Markdown knowledge workspace for Odoo 20.
 
 ## What it does
 
@@ -18,7 +18,7 @@ come from the reusable `automatify_markdown` technical addon.
 
 ## Compatibility
 
-- Odoo 19
+- Odoo 20
 - Python 3.10+
 - Python package `Markdown>=3.5,<4`
 

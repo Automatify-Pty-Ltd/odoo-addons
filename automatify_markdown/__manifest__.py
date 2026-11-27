@@ -1,6 +1,6 @@
 {
     "name": "Markdown Core",
-    "version": "19.0.1.0.0",
+    "version": "20.0.1.0.0",
     "summary": "Reusable Markdown import, export, validation, and sanitization services",
     "category": "Technical",
     "author": "Automatify Pty Ltd",
